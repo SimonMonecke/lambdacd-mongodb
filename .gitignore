@@ -1,0 +1,7 @@
+/target
+*.jar
+*.class
+/.lein-*
+/.nrepl-port
+lambdacd-mongodb.iml
+.idea
