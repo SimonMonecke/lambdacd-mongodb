@@ -1,4 +1,4 @@
-(defproject lambdacd-mongodb "0.1.0-SNAPSHOT"
+(defproject lambdacd-mongodb "0.1.0"
             :description "LambdaCD extension which lets you use a MongoDB to persist the state of pipelines"
             :url "https://github.com/SimonMonecke/lambdacd-mongodb"
             :dependencies [[lambdacd "0.4.0"]
