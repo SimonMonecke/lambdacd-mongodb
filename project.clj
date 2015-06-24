@@ -1,6 +1,6 @@
 (defproject lambdacd-mongodb "0.1.0-SNAPSHOT"
-            :description "FIXME: write description"
-            :url "http://example.com/FIXME"
+            :description "LambdaCD extension which lets you use a MongoDB to persist the state of pipelines"
+            :url "https://github.com/SimonMonecke/lambdacd-mongodb"
             :dependencies [[lambdacd "0.4.0"]
                            [ring-server "0.3.1"]
                            [org.clojure/clojure "1.6.0"]
