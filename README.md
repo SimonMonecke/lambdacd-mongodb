@@ -1,6 +1,6 @@
 # lambdacd-mongodb
 
-If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your projects you certainly noticed that after restarting LambdaCD the build history is lost. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restore it after restart.
+If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your projects you certainly noticed that after restarting LambdaCD the build history is lost. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restores it at the next startup.
 
 ## Example
 
@@ -14,8 +14,8 @@ If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your proj
 ## Configuration
 
 1. To use lambdacd-mongodb you have to create a map containing your MongoDB configuration. The :col key specifies the collection which is used to store all builds from one pipeline. Do not use a collection for more than one pipeline!
-2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg.
-3. Use the assemble-pipeline function from the lambdacd-mongodb.mongodb-state.
+2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg
+3. Use the assemble-pipeline function from the lambdacd-mongodb.mongodb-state
 
 ```clojure
 (defn -main [& args]
