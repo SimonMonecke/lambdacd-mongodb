@@ -27,7 +27,8 @@
         mongodb-cfg {:host "localhost"
                      :port 27017
                      :db   "lambdacd"
-                     :col  "test-project"}
+                     :col  "test-project"
+                     :max-builds 10}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}

@@ -6,41 +6,10 @@
             [clojure.core.async :as async]
             [monger.core :as mg]))
 
-; copyied from lambdacd.presentation.pipeline-state
-
-(defn- desc [a b]
-  (compare b a))
-
-(defn- root-step? [[step-id _]]
-  (= 1 (count step-id)))
-
-(defn- root-step-id [[step-id _]]
-  (first step-id))
-
-(defn- step-result [[_ step-result]]
-  step-result)
-
-(defn- status-for-steps [step-ids-and-results]
-  (let [accumulated-status (->> step-ids-and-results
-                                (filter root-step?)
-                                (sort-by root-step-id desc)
-                                (first)
-                                (step-result)
-                                (:status))]
-    (or accumulated-status :unknown)))
-
-; own functions
-
-(defn- is-inactive? [[_ build-state]]
-  (let [status (status-for-steps build-state)]
-    (not (or (= status :running) (= status :waiting) (= status :unknown)))))
-
-(defn delete-active-builds [his]
-  (into {} (filter is-inactive? his)))
-
-(defn initial-pipeline-state [mongodb-db mongodb-col]
-  (let [build-history (persistence/read-build-history-from mongodb-db mongodb-col)]
-    (delete-active-builds build-history)))
+(defn initial-pipeline-state [mongodb-db mongodb-col max-builds]
+  (when (< max-builds 1)
+    (throw (IllegalArgumentException. "max-builds must be greater than zero")))
+  (persistence/read-build-history-from mongodb-db mongodb-col max-builds))
 
 ; copyied from lambdacd.internal.default-pipeline-state
 
@@ -94,7 +63,8 @@
         mongodb-con (mg/connect (select-keys mongodb-cfg [:host :port]))
         mongodb-db (mg/get-db mongodb-con (:db mongodb-cfg))
         mongodb-col (:col mongodb-cfg)
-        state (atom (initial-pipeline-state mongodb-db mongodb-col))
+        max-builds (or (:max-builds mongodb-cfg) 20)
+        state (atom (initial-pipeline-state mongodb-db mongodb-col max-builds))
         step-results-channel (async/chan)
         pipeline-state-component (new-mongodb-state state mongodb-db mongodb-col step-results-channel)
         context {:config                   config

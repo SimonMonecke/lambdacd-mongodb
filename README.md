@@ -15,7 +15,9 @@ If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your proj
 
 ## Configuration
 
-1. To use lambdacd-mongodb you have to create a map containing your MongoDB configuration. The :col key specifies the collection which is used to store all builds from one pipeline. Do not use a collection for more than one pipeline!
+1. To use lambdacd-mongodb you have to create a map containing your MongoDB configuration.
+   * The :col key specifies the collection which is used to store all builds from one pipeline. Do not use a collection for more than one pipeline!
+   * The :max-builds ist optional (default: 20) and definies how many inactive builds are loaded. Active builds are thrown away because you can not continue them.
 2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg
 3. Use the assemble-pipeline function from the lambdacd-mongodb.mongodb-state
 
@@ -25,7 +27,8 @@ If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your proj
         mongodb-cfg {:host "localhost"
                      :port 27017
                      :db   "lambdacd"
-                     :col  "test-project"}
+                     :col  "test-project"
+                     :max-builds 10}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
@@ -35,6 +38,7 @@ If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your proj
 
 ## TODO
 
+- [ ] Exception-Handling
 - [ ] Tests
 - [ ] No-Memory-Mode: Send a request every time you need any part of the state. At the moment the state is only loaded once and then it is stored in memory
 

@@ -7,6 +7,7 @@
             [clj-time.format :as f]
             [clojure.data.json :as json]
             [monger.collection :as mc]
+            [monger.query :as mq]
             [cheshire.core :as cheshire]))
 
 ; copyied from lambdacd.internal.default-pipeline-state-persistence
@@ -39,13 +40,41 @@
     (keyword v)
     (to-date-if-date v)))
 
+; copyied from lambdacd.presentation.pipeline-state
+
+(defn- desc [a b]
+  (compare b a))
+
+(defn- root-step? [[step-id _]]
+  (= 1 (count step-id)))
+
+(defn- root-step-id [[step-id _]]
+  (first step-id))
+
+(defn- step-result [[_ step-result]]
+  step-result)
+
+(defn- status-for-steps [step-ids-and-results]
+  (let [accumulated-status (->> step-ids-and-results
+                                (filter root-step?)
+                                (sort-by root-step-id desc)
+                                (first)
+                                (step-result)
+                                (:status))]
+    (or accumulated-status :unknown)))
+
+(defn- is-inactive? [build-state]
+  (let [status (status-for-steps build-state)]
+    (not (or (= status :running) (= status :waiting) (= status :unknown)))))
+
 ; own functions
 
 (defn write-build-history [mongodb-db mongodb-col build-number new-state]
   (let [state-as-json (pipeline-state->json-format (get new-state build-number))
         state-as-json-string (util/to-json state-as-json)
         state-as-map (cheshire/parse-string state-as-json-string)
-        state-with-build-number {"steps" state-as-map "build-number" build-number}]
+        is-active (not (is-inactive? (get new-state build-number)))
+        state-with-build-number {"steps" state-as-map "build-number" build-number "is-active" is-active}]
     (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-build-number {:upsert true})))
 
 (defn format-state [old [step-id step-result]]
@@ -59,8 +88,16 @@
         state (json-format->pipeline-state (json/read-str state-as-string :key-fn keyword :value-fn post-process-values))]
     {build-number state}))
 
-(defn read-build-history-from [mongodb-db mongodb-col]
-  (let [build-state-seq (mc/find mongodb-db mongodb-col {})
+(defn- find-builds [mongodb-db mongodb-col max-builds]
+  (println "max-builds" max-builds)
+  (mq/with-collection mongodb-db mongodb-col
+                      (mq/find {"is-active" false})
+                      (mq/sort (array-map "build-number" -1))
+                      (mq/limit max-builds)
+                      (mq/keywordize-fields false)))
+
+(defn read-build-history-from [mongodb-db mongodb-col max-builds]
+  (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)]
     (into {} states)))
