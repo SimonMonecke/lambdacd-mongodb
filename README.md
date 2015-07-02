@@ -38,7 +38,7 @@ If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your proj
 
 ## TODO
 
-- [ ] Exception-Handling
+- [x] Exception-Handling
 - [ ] Tests
 - [ ] No-Memory-Mode: Send a request every time you need any part of the state. At the moment the state is only loaded once and then it is stored in memory
 
