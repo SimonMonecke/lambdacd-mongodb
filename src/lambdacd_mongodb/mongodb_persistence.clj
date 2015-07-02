@@ -1,7 +1,8 @@
 (ns lambdacd-mongodb.mongodb-persistence
   (:import (java.util.regex Pattern)
            (java.io File)
-           (org.joda.time DateTime))
+           (org.joda.time DateTime)
+           (com.mongodb MongoException))
   (:require [clojure.string :as str]
             [lambdacd.util :as util]
             [clj-time.format :as f]
@@ -69,13 +70,17 @@
 
 ; own functions
 
-(defn write-build-history [mongodb-db mongodb-col build-number new-state]
+(defn write-build-history [mongodb-host mongodb-db mongodb-col build-number new-state]
   (let [state-as-json (pipeline-state->json-format (get new-state build-number))
         state-as-json-string (util/to-json state-as-json)
         state-as-map (cheshire/parse-string state-as-json-string)
         is-active (not (is-inactive? (get new-state build-number)))
         state-with-build-number {"steps" state-as-map "build-number" build-number "is-active" is-active}]
-    (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-build-number {:upsert true})))
+    (try
+      (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-build-number {:upsert true})
+      (catch MongoException e
+        (println "Can't connect to MongoDB server" mongodb-host)
+        (System/exit 1)))))
 
 (defn format-state [old [step-id step-result]]
   (conj old {:step-id step-id :step-result step-result}))
@@ -89,15 +94,18 @@
     {build-number state}))
 
 (defn- find-builds [mongodb-db mongodb-col max-builds]
-  (println "max-builds" max-builds)
   (mq/with-collection mongodb-db mongodb-col
                       (mq/find {"is-active" false})
                       (mq/sort (array-map "build-number" -1))
                       (mq/limit max-builds)
                       (mq/keywordize-fields false)))
 
-(defn read-build-history-from [mongodb-db mongodb-col max-builds]
+(defn read-build-history-from [mongodb-host mongodb-db mongodb-col max-builds]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)]
-    (into {} states)))
+    (try
+      (into {} states)
+      (catch MongoException e
+        (println "Can't connect to MongoDB server" mongodb-host)
+        (System/exit 1)))))
