@@ -104,6 +104,7 @@
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)]
+    (println build-state-maps)
     (try
       (into {} states)
       (catch MongoException e
