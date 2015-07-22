@@ -2,7 +2,7 @@
 
 [![Clojars Project](http://clojars.org/lambdacd-mongodb/latest-version.svg)](http://clojars.org/lambdacd-mongodb)
 
-If you already use [LambdaCD](https://github.com/flosell/lambdacd) for your projects you certainly noticed that after restarting LambdaCD the build history is lost. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restores it at the next startup.
+If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment without persistence you certainly noticed that after restarting LambdaCD the build history is lost. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restores it at the next startup.
 
 ## Example
 
