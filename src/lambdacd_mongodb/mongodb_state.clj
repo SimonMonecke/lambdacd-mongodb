@@ -51,26 +51,13 @@
   (next-build-number [self]
     (default-pipeline-state/next-build-number-legacy state-atom)))
 
-(defn new-mongodb-state [state-atom mongodb-host mongodb-db mongodb-col step-results-channel]
-  (let [instance (->MongoDBState state-atom mongodb-host mongodb-db mongodb-col)]
-    (default-pipeline-state/start-pipeline-state-updater instance step-results-channel)
-    instance))
-
-; copied from lambdacd.core, use initial-pipeline-state and new-mongodb-state
-
-(defn assemble-pipeline [pipeline-def config]
+(defn new-mongodb-state [config]
   (let [mongodb-cfg (:mongodb-cfg config)
         mongodb-host (:host mongodb-cfg)
         mongodb-con (mg/connect (select-keys mongodb-cfg [:host :port]))
         mongodb-db (mg/get-db mongodb-con (:db mongodb-cfg))
         mongodb-col (:col mongodb-cfg)
         max-builds (or (:max-builds mongodb-cfg) 20)
-        state (atom (initial-pipeline-state mongodb-host mongodb-db mongodb-col max-builds))
-        step-results-channel (async/chan)
-        pipeline-state-component (new-mongodb-state state mongodb-host mongodb-db mongodb-col step-results-channel)
-        context {:config                   config
-                 :step-results-channel     step-results-channel
-                 :pipeline-state-component pipeline-state-component}]
-    {:state        state
-     :context      context
-     :pipeline-def pipeline-def}))
+        state-atom (atom (initial-pipeline-state mongodb-host mongodb-db mongodb-col max-builds))
+        instance   (->MongoDBState state-atom mongodb-host mongodb-db mongodb-col)]
+    instance))

@@ -5,7 +5,7 @@
                       :url "http://opensource.org/licenses/MIT"}
             :scm {:name "git"
                   :url "https://github.com/SimonMonecke/lambdacd-mongodb.git"}
-            :dependencies [[lambdacd "0.4.0"]
+            :dependencies [[lambdacd "0.5.3"]
                            [ring-server "0.3.1"]
                            [org.clojure/clojure "1.6.0"]
                            [org.clojure/tools.logging "0.3.0"]

@@ -32,7 +32,7 @@
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
-        pipeline (mongodb-state/assemble-pipeline pipeline-def config)
+        pipeline (lambdacd.core/assemble-pipeline pipeline-def config (mongodb-state/new-mongodb-state config))
         app (ui/ui-for pipeline)]
     (log/info "LambdaCD Home Directory is " home-dir)
     (runners/start-one-run-after-another pipeline)

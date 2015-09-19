@@ -4,6 +4,8 @@
 
 If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment without persistence you certainly noticed that after restarting LambdaCD the build history is lost. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restores it at the next startup.
 
+Tested with LambdaCD version 0.5.3
+
 ## Example
 
 1. Start your local MongoDB daemon (default port: 27017)
@@ -32,7 +34,7 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
-        pipeline (mongodb-state/assemble-pipeline pipeline-def config)
+        pipeline (lambdacd.core/assemble-pipeline pipeline-def config (mongodb-state/new-mongodb-state config))
         [...]
 ```
 
@@ -40,7 +42,6 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
 - [x] Exception-Handling
 - [ ] Tests
-- [ ] No-Memory-Mode: Send a request every time you need any part of the state. At the moment the state is only loaded once and then it is stored in memory
 
 ## License
 
