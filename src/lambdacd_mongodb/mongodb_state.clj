@@ -6,10 +6,10 @@
             [clojure.core.async :as async]
             [monger.core :as mg]))
 
-(defn initial-pipeline-state [mongodb-host mongodb-db mongodb-col max-builds]
+(defn initial-pipeline-state [mongodb-host mongodb-db mongodb-col max-builds pipeline-def]
   (when (< max-builds 1)
     (throw (IllegalArgumentException. "max-builds must be greater than zero")))
-  (persistence/read-build-history-from mongodb-host mongodb-db mongodb-col max-builds))
+  (persistence/read-build-history-from mongodb-host mongodb-db mongodb-col max-builds pipeline-def))
 
 ; copyied from lambdacd.internal.default-pipeline-state
 
@@ -33,23 +33,23 @@
 ; copied from lambdacd.internal.default-pipeline-state, change function name and parameters
 
 (defn update-legacy
-  [build-number step-id step-result mongodb-host mongodb-db mongodb-col state]
+  [build-number step-id step-result mongodb-host mongodb-db mongodb-col state pipeline-def]
   (if (not (nil? state))
     (let [new-state (swap! state (partial update-pipeline-state build-number step-id step-result))]
-      (persistence/write-build-history mongodb-host mongodb-db mongodb-col build-number new-state))))
+      (persistence/write-build-history mongodb-host mongodb-db mongodb-col build-number new-state pipeline-def))))
 
 ; copied from lambdacd.internal.default-pipeline-state, change parameters and record name
 
-(defrecord MongoDBState [state-atom mongodb-host mongodb-db mongodb-col]
+(defrecord MongoDBState [state-atom mongodb-host mongodb-db mongodb-col pipeline-def]
   pipeline-state-protocol/PipelineStateComponent
   (update [self build-number step-id step-result]
-    (update-legacy build-number step-id step-result mongodb-host mongodb-db mongodb-col state-atom))
+    (update-legacy build-number step-id step-result mongodb-host mongodb-db mongodb-col state-atom pipeline-def))
   (get-all [self]
     @state-atom)
   (get-internal-state [self]
     state-atom)
   (next-build-number [self]
-    (default-pipeline-state/next-build-number-legacy state-atom)))
+    (quot (System/currentTimeMillis) 1000)))
 
 (defn new-mongodb-state [config]
   (let [mongodb-cfg (:mongodb-cfg config)
@@ -58,6 +58,7 @@
         mongodb-db (mg/get-db mongodb-con (:db mongodb-cfg))
         mongodb-col (:col mongodb-cfg)
         max-builds (or (:max-builds mongodb-cfg) 20)
-        state-atom (atom (initial-pipeline-state mongodb-host mongodb-db mongodb-col max-builds))
-        instance   (->MongoDBState state-atom mongodb-host mongodb-db mongodb-col)]
+        pipeline-def (:pipeline-def mongodb-cfg)
+        state-atom (atom (initial-pipeline-state mongodb-host mongodb-db mongodb-col max-builds pipeline-def))
+        instance   (->MongoDBState state-atom mongodb-host mongodb-db mongodb-col pipeline-def)]
     instance))

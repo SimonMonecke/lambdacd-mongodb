@@ -9,7 +9,9 @@
             [clojure.data.json :as json]
             [monger.collection :as mc]
             [monger.query :as mq]
-            [cheshire.core :as cheshire]))
+            [cheshire.core :as cheshire]
+            [clj-time.core :as t]
+            monger.joda-time))
 
 ; copyied from lambdacd.internal.default-pipeline-state-persistence
 
@@ -70,14 +72,22 @@
 
 ; own functions
 
-(defn write-build-history [mongodb-host mongodb-db mongodb-col build-number new-state]
+(defn write-build-history [mongodb-host mongodb-db mongodb-col build-number new-state pipeline-def]
   (let [state-as-json (pipeline-state->json-format (get new-state build-number))
         state-as-json-string (util/to-json state-as-json)
         state-as-map (cheshire/parse-string state-as-json-string)
         is-active (not (is-inactive? (get new-state build-number)))
-        state-with-build-number {"steps" state-as-map "build-number" build-number "is-active" is-active}]
+        pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))
+        state-with-more-information {"steps"        state-as-map
+                                     "build-number" build-number
+                                     "is-active"    is-active
+                                     "hash"         pipeline-def-hash
+                                     "created-at"   (t/now)}]
     (try
-      (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-build-number {:upsert true})
+      (when (not (mc/exists? mongodb-db mongodb-col))
+        (mc/create mongodb-db mongodb-col {}))
+      (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/weeks 2)))})
+      (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-more-information {:upsert true})
       (catch MongoException e
         (println "Can't connect to MongoDB server" mongodb-host)
         (System/exit 1)))))
@@ -93,15 +103,16 @@
         state (json-format->pipeline-state (json/read-str state-as-string :key-fn keyword :value-fn post-process-values))]
     {build-number state}))
 
-(defn- find-builds [mongodb-db mongodb-col max-builds]
-  (mq/with-collection mongodb-db mongodb-col
-                      (mq/find {"is-active" false})
-                      (mq/sort (array-map "build-number" -1))
-                      (mq/limit max-builds)
-                      (mq/keywordize-fields false)))
+(defn- find-builds [mongodb-db mongodb-col max-builds pipeline-def]
+  (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
+    (mq/with-collection mongodb-db mongodb-col
+                        (mq/find {"hash" pipeline-def-hash})
+                        (mq/sort (array-map "build-number" -1))
+                        (mq/limit max-builds)
+                        (mq/keywordize-fields false))))
 
-(defn read-build-history-from [mongodb-host mongodb-db mongodb-col max-builds]
-  (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds)
+(defn read-build-history-from [mongodb-host mongodb-db mongodb-col max-builds pipeline-def]
+  (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)]
     (println build-state-maps)

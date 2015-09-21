@@ -18,6 +18,7 @@
      (in-parallel
        some-step-that-echos-foo
        some-step-that-echos-bar)
+     some-step-that-does-nothing
      wait-for-manual-trigger
      some-failing-step
      ))
@@ -28,7 +29,8 @@
                      :port 27017
                      :db   "lambdacd"
                      :col  "test-project"
-                     :max-builds 10}
+                     :max-builds 10
+                     :pipeline-def pipeline-def}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
