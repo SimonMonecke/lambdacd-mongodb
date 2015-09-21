@@ -30,7 +30,8 @@ Tested with LambdaCD version 0.5.3
                      :port 27017
                      :db   "lambdacd"
                      :col  "test-project"
-                     :max-builds 10}
+                     :max-builds 10
+                     :pipeline-def pipeline-def}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
