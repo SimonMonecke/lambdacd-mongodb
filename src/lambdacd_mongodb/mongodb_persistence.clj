@@ -11,7 +11,8 @@
             [monger.query :as mq]
             [cheshire.core :as cheshire]
             [clj-time.core :as t]
-            monger.joda-time))
+            monger.joda-time
+            [clojure.tools.logging :as log]))
 
 ; copyied from lambdacd.internal.default-pipeline-state-persistence
 
@@ -89,8 +90,11 @@
       (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/weeks 2)))})
       (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-more-information {:upsert true})
       (catch MongoException e
-        (println "Can't connect to MongoDB server" mongodb-host)
-        (System/exit 1)))))
+        (log/error (str "Write to DB: Can't connect to MongoDB server \"" mongodb-host "\""))
+        (log/error e))
+      (catch Exception e
+        (log/error "Write to DB: An unexpected error occurred")
+        (log/error e)))))
 
 (defn format-state [old [step-id step-result]]
   (conj old {:step-id step-id :step-result step-result}))
@@ -141,5 +145,8 @@
     (try
       (into {} cleaned-states)
       (catch MongoException e
-        (println "Can't connect to MongoDB server" mongodb-host)
-        (System/exit 1)))))
+        (log/error (str "Read from DB: Can't connect MongoDB server \"" mongodb-host "\""))
+        (log/error e))
+      (catch Exception e
+        (log/error "Read from DB: An unexpected error occurred")
+        (log/error e)))))
