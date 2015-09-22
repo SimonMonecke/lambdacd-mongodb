@@ -111,13 +111,35 @@
                         (mq/limit max-builds)
                         (mq/keywordize-fields false))))
 
+(defn to-kill [m]
+  (if (or (= (:status m) :running) (= (:status m) :waiting)) (assoc m :status :killed) m))
+
+(defn clean-steps [steps]
+  (reduce
+    (fn [m k]
+      (assoc m k
+               (to-kill (get steps k))))
+    {} (keys steps)))
+
+(defn clean-build [build]
+  (reduce
+    (fn [m k]
+      (assoc m k
+               (clean-steps (get build k))))
+    {} (keys build)))
+
+(defn clean-states [build-list]
+  (map
+    clean-build
+    build-list))
+
 (defn read-build-history-from [mongodb-host mongodb-db mongodb-col max-builds pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
-        states (map read-state build-state-maps)]
-    (println build-state-maps)
+        states (map read-state build-state-maps)
+        cleaned-states (clean-states states)]
     (try
-      (into {} states)
+      (into {} cleaned-states)
       (catch MongoException e
         (println "Can't connect to MongoDB server" mongodb-host)
         (System/exit 1)))))
