@@ -14,6 +14,6 @@
                            [ch.qos.logback/logback-classic "1.0.13"]
                            [com.novemberain/monger "2.0.0"]
                            [cheshire "5.5.0"]]
-            :test-paths ["example"]
+            :test-paths ["test", "example"]
             :profiles {:uberjar {:aot :all}}
             :main example-pipeline.pipeline)

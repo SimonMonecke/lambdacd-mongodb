@@ -47,7 +47,7 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 ## TODO
 
 - [x] Exception-Handling
-- [ ] Tests
+- [x] Tests
 
 ## License
 
