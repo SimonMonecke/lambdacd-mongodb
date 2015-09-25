@@ -7,7 +7,6 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 ## Nice to know
 
 * Only builds with the same defintion can be restored (-> [LambdaCD Issue #6](https://github.com/flosell/lambdacd/issues/6))
-* Every build is stored with a TTL of two weeks
 * Every running or waiting build is displayed as killed after restoring
 * Only builds with at least two active steps are stored because you don't need builds waiting for a trigger 
 * Tested with LambdaCD version 0.5.3
@@ -25,17 +24,18 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
 1. To use lambdacd-mongodb you have to create a map containing your MongoDB configuration.
    * The :col key specifies the collection which is used to store all builds from one pipeline. Do not use a collection for more than one pipeline!
-   * The :max-builds ist optional (default: 20) and definies how many inactive builds are loaded. Active builds are thrown away because you can not continue them.
+   * The :max-builds key is optional (default: 20) and definies how many inactive builds are loaded. Active builds are thrown away because you can not continue them.
+   * The :ttl key is optional (default: 7) and definies how many days the builds should be stored
 2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg
 
 ```clojure
 (defn -main [& args]
   (let [home-dir (util/create-temp-dir)
-        mongodb-cfg {:host "localhost"
-                     :port 27017
-                     :db   "lambdacd"
-                     :col  "test-project"
-                     :max-builds 10
+        mongodb-cfg {:uri          "mongodb://localhost:27017/lambdacd"
+                     :db           "lambdacd"
+                     :col          "test-project"
+                     :max-builds   10
+                     :ttl          7
                      :pipeline-def pipeline-def}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir

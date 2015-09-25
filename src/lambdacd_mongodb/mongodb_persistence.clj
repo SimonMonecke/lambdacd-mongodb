@@ -79,7 +79,7 @@
             (fn [[k v]] (last k))
             (get build (first (keys build))))))
 
-(defn write-build-history [mongodb-host mongodb-db mongodb-col build-number new-state pipeline-def]
+(defn write-build-history [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
   (when (not (build-has-only-a-trigger new-state))
     (let [state-as-json (pipeline-state->json-format (get new-state build-number))
           state-as-json-string (util/to-json state-as-json)
@@ -94,14 +94,15 @@
       (try
         (when (not (mc/exists? mongodb-db mongodb-col))
           (mc/create mongodb-db mongodb-col {}))
-        (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/weeks 2)))})
+        (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
         (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-more-information {:upsert true})
         (catch MongoException e
-          (log/error (str "Write to DB: Can't connect to MongoDB server \"" mongodb-host "\""))
+          (log/error (str "Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
           (log/error e))
         (catch Exception e
           (log/error "Write to DB: An unexpected error occurred")
-          (log/error e))))))
+          (prn "caught" e)
+          (clojure.stacktrace/print-stack-trace e))))))
 
 (defn format-state [old [step-id step-result]]
   (conj old {:step-id step-id :step-result step-result}))
@@ -144,7 +145,7 @@
     clean-build
     build-list))
 
-(defn read-build-history-from [mongodb-host mongodb-db mongodb-col max-builds pipeline-def]
+(defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)
@@ -152,8 +153,9 @@
     (try
       (into {} cleaned-states)
       (catch MongoException e
-        (log/error (str "Read from DB: Can't connect MongoDB server \"" mongodb-host "\""))
+        (log/error (str "Read from DB: Can't connect MongoDB server \"" mongodb-uri "\""))
         (log/error e))
       (catch Exception e
         (log/error "Read from DB: An unexpected error occurred")
-        (log/error e)))))
+        (prn "caught" e)
+        (clojure.stacktrace/print-stack-trace e)))))

@@ -25,11 +25,11 @@
 
 (defn -main [& args]
   (let [home-dir (util/create-temp-dir)
-        mongodb-cfg {:host "localhost"
-                     :port 27017
-                     :db   "lambdacd"
-                     :col  "test-project"
-                     :max-builds 10
+        mongodb-cfg {:uri          "mongodb://localhost:27017/lambdacd"
+                     :db           "lambdacd"
+                     :col          "test-project"
+                     :max-builds   10
+                     :ttl          7
                      :pipeline-def pipeline-def}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
