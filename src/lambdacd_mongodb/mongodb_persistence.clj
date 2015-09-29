@@ -73,14 +73,16 @@
 
 ; own functions
 
+; TODO
 (defn build-has-only-a-trigger [build]
+  (log/error build)
   (every? (partial = 1)
           (map
-            (fn [[k v]] (last k))
-            (get build (first (keys build))))))
+            last
+            (keys build))))
 
 (defn write-build-history [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
-  (when (not (build-has-only-a-trigger new-state))
+  ;(when (not (build-has-only-a-trigger new-state))
     (let [state-as-json (pipeline-state->json-format (get new-state build-number))
           state-as-json-string (util/to-json state-as-json)
           state-as-map (cheshire/parse-string state-as-json-string)
@@ -101,7 +103,7 @@
           (log/error e))
         (catch Exception e
           (log/error "LambdaCD-MongoDB: Write to DB: An unexpected error occurred")
-          (log/error "LambdaCD-MongoDB: caught" (.getMessage e)))))))
+          (log/error "LambdaCD-MongoDB: caught" (.getMessage e))))))
 
 (defn format-state [old [step-id step-result]]
   (conj old {:step-id step-id :step-result step-result}))
