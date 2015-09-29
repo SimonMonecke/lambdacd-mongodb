@@ -9,7 +9,7 @@
 
 (defn initial-pipeline-state [mongodb-uri mongodb-db mongodb-col max-builds pipeline-def]
   (when (< max-builds 1)
-    (throw (IllegalArgumentException. "max-builds must be greater than zero")))
+    (log/error "LambdaCD-MongoDB: max-builds must be greater than zero"))
   (persistence/read-build-history-from mongodb-uri mongodb-db mongodb-col max-builds pipeline-def))
 
 ; copyied from lambdacd.internal.default-pipeline-state
@@ -69,8 +69,7 @@
                       (:pipeline-def mc)))
     (catch Exception e
       (log/error "LambdaCD-MongoDB: Can't initialize MongoDB")
-      (prn "caught" e)
-      (clojure.stacktrace/print-stack-trace e))))
+      (log/error "LambdaCD-MongoDB: caught" (.getMessage e)))))
 
 (defn get-missing-keys [mc]
   (let [keyset (set (keys mc))

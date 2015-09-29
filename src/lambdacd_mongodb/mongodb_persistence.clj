@@ -97,12 +97,11 @@
         (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
         (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-more-information {:upsert true})
         (catch MongoException e
-          (log/error (str "Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
+          (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
           (log/error e))
         (catch Exception e
-          (log/error "Write to DB: An unexpected error occurred")
-          (prn "caught" e)
-          (clojure.stacktrace/print-stack-trace e))))))
+          (log/error "LambdaCD-MongoDB: Write to DB: An unexpected error occurred")
+          (log/error "LambdaCD-MongoDB: caught" (.getMessage e)))))))
 
 (defn format-state [old [step-id step-result]]
   (conj old {:step-id step-id :step-result step-result}))
@@ -153,9 +152,8 @@
     (try
       (into {} cleaned-states)
       (catch MongoException e
-        (log/error (str "Read from DB: Can't connect MongoDB server \"" mongodb-uri "\""))
+        (log/error (str "LambdaCD-MongoDB: Read from DB: Can't connect MongoDB server \"" mongodb-uri "\""))
         (log/error e))
       (catch Exception e
-        (log/error "Read from DB: An unexpected error occurred")
-        (prn "caught" e)
-        (clojure.stacktrace/print-stack-trace e)))))
+        (log/error "LambdaCD-MongoDB: Read from DB: An unexpected error occurred")
+        (log/error "LambdaCD-MongoDB: caught" (.getMessage e))))))
