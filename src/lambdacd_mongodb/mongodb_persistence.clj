@@ -75,9 +75,8 @@
 ; own functions
 
 (defn build-has-only-a-trigger [build]
-  (every? (partial = 1)
-          (map last
-               (keys (last (first build))))))
+  (every? #(= % 1)
+          (select [ALL FIRST LAST] build)))
 
 (defn write-build-history [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
   (when (not (build-has-only-a-trigger (get new-state build-number)))
