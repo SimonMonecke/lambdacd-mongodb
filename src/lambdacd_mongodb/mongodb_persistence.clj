@@ -12,7 +12,8 @@
             [cheshire.core :as cheshire]
             [clj-time.core :as t]
             monger.joda-time
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log])
+  (:use [com.rpl.specter]))
 
 ; copyied from lambdacd.internal.default-pipeline-state-persistence
 
@@ -121,27 +122,16 @@
                         (mq/limit max-builds)
                         (mq/keywordize-fields false))))
 
-(defn to-kill [m]
-  (if (or (= (:status m) :running) (= (:status m) :waiting)) (assoc m :status :killed) m))
-
-(defn clean-steps [steps]
-  (reduce
-    (fn [m k]
-      (assoc m k
-               (to-kill (get steps k))))
-    {} (keys steps)))
-
-(defn clean-build [build]
-  (reduce
-    (fn [m k]
-      (assoc m k
-               (clean-steps (get build k))))
-    {} (keys build)))
-
 (defn clean-states [build-list]
-  (map
-    clean-build
-    build-list))
+  (setval [ALL ;Container
+           ALL ;All builds
+           LAST ;List of steps
+           ALL ;All steps
+           LAST ;Data of every step
+           :status
+           #(or (= % :waiting) (= % :running))]
+          :killed
+          build-list))
 
 (defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
