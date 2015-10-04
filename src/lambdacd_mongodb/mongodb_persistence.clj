@@ -123,11 +123,11 @@
                         (mq/keywordize-fields false))))
 
 (defn clean-states [build-list]
-  (setval [ALL ;Container
-           ALL ;All builds
-           LAST ;List of steps
-           ALL ;All steps
-           LAST ;Data of every step
+  (setval [ALL                                              ;Container
+           ALL                                              ;All builds
+           LAST                                             ;List of steps
+           ALL                                              ;All steps
+           LAST                                             ;Data of every step
            :status
            #(or (= % :waiting) (= % :running))]
           :killed
