@@ -80,28 +80,28 @@
                (keys (last (first build))))))
 
 (defn write-build-history [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
-  ;(when (not (build-has-only-a-trigger new-state))
-  (let [state-as-json (pipeline-state->json-format (get new-state build-number))
-        state-as-json-string (util/to-json state-as-json)
-        state-as-map (cheshire/parse-string state-as-json-string)
-        is-active (not (is-inactive? (get new-state build-number)))
-        pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))
-        state-with-more-information {"steps"        state-as-map
-                                     "build-number" build-number
-                                     "is-active"    is-active
-                                     "hash"         pipeline-def-hash
-                                     "created-at"   (t/now)}]
-    (try
-      (when (not (mc/exists? mongodb-db mongodb-col))
-        (mc/create mongodb-db mongodb-col {}))
-      (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
-      (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-more-information {:upsert true})
-      (catch MongoException e
-        (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
-        (log/error e))
-      (catch Exception e
-        (log/error "LambdaCD-MongoDB: Write to DB: An unexpected error occurred")
-        (log/error "LambdaCD-MongoDB: caught" (.getMessage e))))))
+  (when (not (build-has-only-a-trigger (get new-state build-number)))
+    (let [state-as-json (pipeline-state->json-format (get new-state build-number))
+          state-as-json-string (util/to-json state-as-json)
+          state-as-map (cheshire/parse-string state-as-json-string)
+          is-active (not (is-inactive? (get new-state build-number)))
+          pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))
+          state-with-more-information {"steps"        state-as-map
+                                       "build-number" build-number
+                                       "is-active"    is-active
+                                       "hash"         pipeline-def-hash
+                                       "created-at"   (t/now)}]
+      (try
+        (when (not (mc/exists? mongodb-db mongodb-col))
+          (mc/create mongodb-db mongodb-col {}))
+        (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
+        (mc/update mongodb-db mongodb-col {"build-number" build-number} state-with-more-information {:upsert true})
+        (catch MongoException e
+          (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
+          (log/error e))
+        (catch Exception e
+          (log/error "LambdaCD-MongoDB: Write to DB: An unexpected error occurred")
+          (log/error "LambdaCD-MongoDB: caught" (.getMessage e)))))))
 
 (defn format-state [old [step-id step-result]]
   (conj old {:step-id step-id :step-result step-result}))
