@@ -1,4 +1,4 @@
-(defproject lambdacd-mongodb "0.5.5"
+(defproject lambdacd-mongodb "0.5.6-SNAPSHOT"
             :description "LambdaCD extension which lets you use a MongoDB to persist the state of pipelines"
             :url "https://github.com/SimonMonecke/lambdacd-mongodb"
             :license {:name "The MIT License (MIT)"
