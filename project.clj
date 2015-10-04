@@ -13,7 +13,8 @@
                            [ch.qos.logback/logback-core "1.0.13"]
                            [ch.qos.logback/logback-classic "1.0.13"]
                            [com.novemberain/monger "2.0.0"]
-                           [cheshire "5.5.0"]]
+                           [cheshire "5.5.0"]
+                           [com.rpl/specter "0.7.1"]]
             :test-paths ["test", "example"]
             :profiles {:uberjar {:aot :all}}
             :main example-pipeline.pipeline)
