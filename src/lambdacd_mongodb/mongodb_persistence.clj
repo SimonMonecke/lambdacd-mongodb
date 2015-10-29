@@ -119,7 +119,7 @@
                         (mq/limit max-builds)
                         (mq/keywordize-fields false))))
 
-(defn clean-states [build-list]
+(defn kill-running-or-waiting-states [build-list]
   (setval [ALL                                              ;Container
            ALL                                              ;All builds
            LAST                                             ;List of steps
@@ -130,13 +130,41 @@
           :killed
           build-list))
 
+(defn set-killed-message [build-list]
+  (setval [ALL                                              ;Container
+           ALL                                              ;All builds
+           LAST                                             ;List of steps
+           ALL                                              ;All steps
+           LAST                                             ;Data of every step
+           #(or (= (:status %) :waiting) (= (:status %) :running))
+           :details]
+          [{:label   "LambdaCD-MongoDB:"
+            :details [{:label "Step was killed by a restart"}]}]
+          build-list))
+
+(defn remove-artifacts [build-list]
+  (setval [ALL
+           ALL
+           LAST
+           ALL
+           LAST
+           :details
+           #(sequential? %)
+           ALL
+           #(= (:label %) "Artifacts")
+           :details]
+          [{:label "Artifacts are deleted after a restart"}]
+          build-list))
+
 (defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)
-        cleaned-states (clean-states states)]
+        wo-artifacts (remove-artifacts states)
+        with-killed-message (set-killed-message wo-artifacts)
+        wo-running-or-waiting-states (kill-running-or-waiting-states with-killed-message)]
     (try
-      (into {} cleaned-states)
+      (into {} wo-running-or-waiting-states)
       (catch MongoException e
         (log/error (str "LambdaCD-MongoDB: Read from DB: Can't connect MongoDB server \"" mongodb-uri "\""))
         (log/error e))
