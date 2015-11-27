@@ -119,28 +119,40 @@
                         (mq/limit max-builds)
                         (mq/keywordize-fields false))))
 
-(defn kill-running-or-waiting-states [build-list]
+(defn set-status-of-step-specter [old-status new-status build-list]
   (setval [ALL                                              ;Container
            ALL                                              ;All builds
            LAST                                             ;List of steps
            ALL                                              ;All steps
            LAST                                             ;Data of every step
            :status
-           #(or (= % :waiting) (= % :running))]
-          :killed
+           #(= % old-status)]
+          new-status
           build-list))
 
-(defn set-killed-message [build-list]
+(defn set-status-of-step [build-list mark-running-steps-as-failure]
+  (->> build-list
+       (set-status-of-step-specter :waiting :killed)
+       (set-status-of-step-specter :running (if mark-running-steps-as-failure
+                                              :failure
+                                              :killed))))
+
+(defn set-step-message-specter [status msg build-list]
   (setval [ALL                                              ;Container
            ALL                                              ;All builds
            LAST                                             ;List of steps
            ALL                                              ;All steps
            LAST                                             ;Data of every step
-           #(or (= (:status %) :waiting) (= (:status %) :running))
+           #(= (:status %) status)
            :details]
           [{:label   "LambdaCD-MongoDB:"
-            :details [{:label "Step was killed by a restart"}]}]
+            :details [{:label msg}]}]
           build-list))
+
+(defn set-step-message [build-list]
+  (->> build-list
+       (set-step-message-specter :waiting "Waiting step was killed by a restart")
+       (set-step-message-specter :running "Running step was killed by a restart")))
 
 (defn remove-artifacts [build-list]
   (setval [ALL
@@ -156,13 +168,13 @@
           [{:label "Artifacts are deleted after a restart"}]
           build-list))
 
-(defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds pipeline-def]
+(defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as-failure pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)
         wo-artifacts (remove-artifacts states)
-        with-killed-message (set-killed-message wo-artifacts)
-        wo-running-or-waiting-states (kill-running-or-waiting-states with-killed-message)]
+        with-killed-message (set-step-message wo-artifacts)
+        wo-running-or-waiting-states (set-status-of-step with-killed-message mark-running-steps-as-failure)]
     (try
       (into {} wo-running-or-waiting-states)
       (catch MongoException e
