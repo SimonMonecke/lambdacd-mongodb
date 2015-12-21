@@ -30,7 +30,7 @@
                      :col          "test-project"
                      :max-builds   10
                      :ttl          7
-                     :mark-running-steps-as-failure false
+                     :mark-running-steps-as :failure
                      :pipeline-def pipeline-def}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir

@@ -7,10 +7,10 @@
             [monger.core :as mg]
             [clojure.tools.logging :as log]))
 
-(defn initial-pipeline-state [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as-failure pipeline-def]
+(defn initial-pipeline-state [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (when (< max-builds 1)
     (log/error "LambdaCD-MongoDB: max-builds must be greater than zero"))
-  (persistence/read-build-history-from mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as-failure pipeline-def))
+  (persistence/read-build-history-from mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def))
 
 ; copyied from lambdacd.internal.default-pipeline-state
 
@@ -60,7 +60,7 @@
                                                    db
                                                    (:col mc)
                                                    (or (:max-builds mc) 20)
-                                                   (or (:mark-running-steps-as-failure mc) false)
+                                                   (or (:mark-running-steps-as mc) :killed)
                                                    (:pipeline-def mc)))]
       (->MongoDBState state-atom
                       (:uri mc)

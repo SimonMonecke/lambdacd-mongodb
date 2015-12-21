@@ -8,25 +8,32 @@
           '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
              {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
           (p/set-status-of-step '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
-                                   {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) false))))
+                                   {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :killed))))
   (testing "don't change failed or success steps"
     (is (=
           '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
              {7812 {'(1) {:status :success} '(2) {:status :failed :foo :bar} '(3) {:status :success}}})
           (p/set-status-of-step '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
-                                   {7812 {'(1) {:status :success} '(2) {:status :failed :foo :bar} '(3) {:status :success}}}) false))))
+                                   {7812 {'(1) {:status :success} '(2) {:status :failed :foo :bar} '(3) {:status :success}}}) :killed))))
   (testing "only change running or waiting but not success or failed steps"
     (is (=
           '({1234 {'(1) {:status :killed} '(2 1) {:status :success} '(2) {:status :killed}}}
              {7812 {'(1) {:status :killed} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
           (p/set-status-of-step '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
-                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) false))))
-  (testing "set running steps to :failure if mark-running-steps-as-failure is true"
+                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :killed))))
+  (testing "set running steps to :failure if mark-running-steps-as is :failure"
     (is (=
           '({1234 {'(1) {:status :killed} '(2 1) {:status :success} '(2) {:status :failure}}}
              {7812 {'(1) {:status :failure} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
           (p/set-status-of-step '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
-                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) true)))))
+                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :failure))))
+
+(testing "set running steps to :success if mark-running-steps-as is :success"
+    (is (=
+          '({1234 {'(1) {:status :killed} '(2 1) {:status :success} '(2) {:status :success}}}
+             {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
+          (p/set-status-of-step '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
+                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :success)))))
 
 (deftest test-build-has-only-a-trigger
   (testing "build with only a trigger"
