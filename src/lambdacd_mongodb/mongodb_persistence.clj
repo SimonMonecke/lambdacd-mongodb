@@ -93,6 +93,7 @@
       (try
         (mc/update mongodb-db mongodb-col {:build-number build-number} state-with-more-information {:upsert true})
         (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
+        (mc/ensure-index mongodb-db mongodb-col (array-map :build-number 1))
         (catch MongoException e
           (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
           (log/error e))
