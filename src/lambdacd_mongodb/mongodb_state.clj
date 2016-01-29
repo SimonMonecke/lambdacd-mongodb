@@ -34,17 +34,18 @@
 ; copied from lambdacd.internal.default-pipeline-state, change function name and parameters
 
 (defn update-legacy
-  [build-number step-id step-result mongodb-uri mongodb-db mongodb-col state ttl pipeline-def]
+  [persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state ttl pipeline-def]
   (if (not (nil? state))
-    (let [new-state (swap! state (partial update-pipeline-state build-number step-id step-result))]
-      (persistence/write-build-history mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def))))
+    (let [old-state @state
+          new-state (swap! state (partial update-pipeline-state build-number step-id step-result))]
+      (persistence/write-build-history mongodb-uri mongodb-db mongodb-col persist-the-output-of-running-steps build-number old-state new-state ttl pipeline-def))))
 
 ; copied from lambdacd.internal.default-pipeline-state, change parameters and record name
 
-(defrecord MongoDBState [state-atom mongodb-uri mongodb-db mongodb-col ttl pipeline-def]
+(defrecord MongoDBState [state-atom persist-the-output-of-running-steps mongodb-uri mongodb-db mongodb-col ttl pipeline-def]
   pipeline-state-protocol/PipelineStateComponent
   (update [self build-number step-id step-result]
-    (update-legacy build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
+    (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
   (get-all [self]
     @state-atom)
   (get-internal-state [self]
@@ -63,6 +64,7 @@
                                                    (or (:mark-running-steps-as mc) :killed)
                                                    (:pipeline-def mc)))]
       (->MongoDBState state-atom
+                      (= true (:persist-the-output-of-running-steps mc))
                       (:uri mc)
                       db
                       (:col mc)

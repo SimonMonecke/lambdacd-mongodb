@@ -19,7 +19,7 @@
 (defn some-step-that-echos-foo [_ ctx]
   (shell/bash ctx "/" "echo foo"))
 (defn some-step-that-echos-bar [_ ctx]
-  (write-n-times ctx (new-printer) 20 "echo bar"))
+  (write-n-times ctx (new-printer) 10 "bar"))
 
 (defn some-failing-step [_ ctx]
   (shell/bash ctx "/" "echo \"i am going to fail now...\"" "exit 1"))

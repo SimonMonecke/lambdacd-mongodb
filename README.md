@@ -27,6 +27,7 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
    * The :max-builds key is optional (default: 20) and definies how many inactive builds are loaded. Active builds are thrown away because you can not continue them.
    * The :ttl key is optional (default: 7) and definies how many days the builds should be stored
    * The :mark-running-steps-as is optional (default: :killed). If you set it to :failure all running steps will be marked with the status :failure. If set to :success, running steps will me marked as :success. Please be advised that configurating something other than :success, :failure or :killed will leave your pipeline in an undefined state.
+   * The :persist-the-output-of-running-steps is optional (default: false). If you set it to true the state of the pipeline will be persisted if the output of any step is changed (-> many write operations). If you set it to false the state of the pipeline will only be persisted if the status of any step is changed (-> fewer write operations).
 2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg
 
 ```clojure
@@ -38,7 +39,8 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
                      :max-builds   10
                      :ttl          7
                      :mark-running-steps-as :killed
-                     :pipeline-def pipeline-def}
+                     :pipeline-def pipeline-def
+                     :persist-the-output-of-running-steps false}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}

@@ -31,7 +31,8 @@
                      :max-builds   10
                      :ttl          7
                      :mark-running-steps-as :failure
-                     :pipeline-def pipeline-def}
+                     :pipeline-def pipeline-def
+                     :persist-the-output-of-running-steps false}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
