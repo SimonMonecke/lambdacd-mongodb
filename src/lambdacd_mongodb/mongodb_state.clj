@@ -96,7 +96,7 @@
 (defn new-mongodb-state [config]
   (log/debug config)
   (let [mongodb-persistence (get-mongodb-cfg config)]
-    (if (nil? (get-mongodb-cfg config))
+    (if (nil? mongodb-persistence)
       (do (log/error "LambdaCD-MongoDB: Can't init persistence.")
           (log/error "Use fallback: LambdaCD-Default-Persistence")
           (default-pipeline-state/new-default-pipeline-state config))
