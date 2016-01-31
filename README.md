@@ -7,9 +7,8 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 ## Nice to know
 
 * Only builds with the same defintion can be restored (-> [LambdaCD Issue #6](https://github.com/flosell/lambdacd/issues/6))
-* Every running or waiting build is displayed as killed after restoring
 * Only builds with at least two active steps are stored because you don't need builds waiting for a trigger 
-* Tested with LambdaCD version 0.5.3
+* Tested with LambdaCD version 0.6.1
 
 ## Example
 
