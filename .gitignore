@@ -5,3 +5,4 @@
 /.nrepl-port
 lambdacd-mongodb.iml
 .idea
+pom.xml*
