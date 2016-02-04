@@ -71,8 +71,7 @@
                       (or (:ttl mc) 7)
                       (:pipeline-def mc)))
     (catch Exception e
-      (log/error "LambdaCD-MongoDB: Can't initialize MongoDB")
-      (log/error "LambdaCD-MongoDB: caught" (.getMessage e)))))
+      (log/error e "LambdaCD-MongoDB: Failed to initialize MongoDB"))))
 
 (defn get-missing-keys [mc]
   (let [keyset (set (keys mc))
