@@ -3,7 +3,7 @@
             [lambdacd.steps.support :refer [new-printer print-to-output printed-output]]))
 
 (defn some-step-that-does-nothing [& _]
-  {:status :success})
+  {:status :success :global {:key1 "keyword" "key2" "string"}})
 
 (defn write-n-times [ctx printer n text]
   (if (= n 1)
