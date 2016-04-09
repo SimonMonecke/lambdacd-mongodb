@@ -23,12 +23,6 @@
 (defn- unformat-step-id [formatted-step-id]
   (map util/parse-int (str/split formatted-step-id (Pattern/compile "-"))))
 
-(defn- step-result->json-format [old [k v]]
-  (assoc old (formatted-step-id k) v))
-
-(defn- pipeline-state->json-format [pipeline-state]
-  (reduce step-result->json-format {} pipeline-state))
-
 (defn- step-json->step [{step-result :step-result step-id :step-id}]
   {(unformat-step-id step-id) step-result})
 
@@ -86,19 +80,44 @@
     {}
     state))
 
+(defn step-id-lists->string [old [k v]]
+  (assoc old (formatted-step-id k) v))
+
+(defn get-current-build [build-number m]
+  (get m build-number))
+
+(defn wrap-in-map [m]
+  {:steps m})
+
+(defn add-hash-to-map [pipeline-def m]
+  (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
+    (assoc m :hash pipeline-def-hash)))
+
+(defn add-is-active-to-map [m]
+  (assoc m :is-active (not (is-inactive? (:steps m)))))
+
+(defn add-build-number-to-map [build-number m]
+  (assoc m :build-number build-number))
+
+(defn add-created-at-to-map [m]
+  (assoc m :created-at (t/now)))
+
+(defn enrich-pipeline-state [pipeline-state build-number pipeline-def]
+  (->> pipeline-state
+       ((partial get-current-build build-number))
+       ((partial reduce step-id-lists->string {}))
+       (wrap-in-map)
+       ((partial add-hash-to-map pipeline-def))
+       (add-is-active-to-map)
+       ((partial add-build-number-to-map build-number))
+       (cheshire/generate-string)
+       (cheshire/parse-string)
+       (add-created-at-to-map)))
+
 (defn write-to-mongo-db [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
-  (let [state-as-json (pipeline-state->json-format (get new-state build-number))
-        state-as-json-string (util/to-json state-as-json)
-        state-as-map (cheshire/parse-string state-as-json-string)
-        is-active (not (is-inactive? (get new-state build-number)))
-        pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))
-        state-with-more-information {:steps        state-as-map
-                                     :build-number build-number
-                                     :is-active    is-active
-                                     :hash         pipeline-def-hash
-                                     :created-at   (t/now)}]
+  (let [enriched-state (enrich-pipeline-state new-state build-number pipeline-def)]
     (try
-      (mc/update mongodb-db mongodb-col {:build-number build-number} state-with-more-information {:upsert true})
+      (mc/update mongodb-db mongodb-col {:build-number build-number} enriched-state {:upsert true})
       (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
       (mc/ensure-index mongodb-db mongodb-col (array-map :build-number 1))
       (catch MongoException e
