@@ -34,11 +34,6 @@
     (f/parse util/iso-formatter v)
     (catch Throwable t v)))
 
-(defn- post-process-values [k v]
-  (if (= :status k)
-    (keyword v)
-    (to-date-if-date v)))
-
 ; copyied from lambdacd.presentation.pipeline-state
 
 (defn- desc [a b]
@@ -100,7 +95,12 @@
   (assoc m :build-number build-number))
 
 (defn add-created-at-to-map [m]
-  (assoc m :created-at (t/now)))
+  (assoc m ":created-at" (t/now)))
+
+(defn- pre-process-values [k v]
+  (if (keyword? v)
+    (str v)
+    v))
 
 (defn enrich-pipeline-state [pipeline-state build-number pipeline-def]
   (->> pipeline-state
@@ -110,16 +110,16 @@
        ((partial add-hash-to-map pipeline-def))
        (add-is-active-to-map)
        ((partial add-build-number-to-map build-number))
-       (cheshire/generate-string)
+       ((fn [m] (json/write-str m :key-fn str :value-fn pre-process-values)))
        (cheshire/parse-string)
        (add-created-at-to-map)))
 
 (defn write-to-mongo-db [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
   (let [enriched-state (enrich-pipeline-state new-state build-number pipeline-def)]
     (try
-      (mc/update mongodb-db mongodb-col {:build-number build-number} enriched-state {:upsert true})
-      (mc/ensure-index mongodb-db mongodb-col (array-map :created-at 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
-      (mc/ensure-index mongodb-db mongodb-col (array-map :build-number 1))
+      (mc/update mongodb-db mongodb-col {":build-number" build-number} enriched-state {:upsert true})
+      (mc/ensure-index mongodb-db mongodb-col (array-map ":created-at" 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
+      (mc/ensure-index mongodb-db mongodb-col (array-map ":build-number" 1))
       (catch MongoException e
         (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
         (log/error e))
@@ -137,21 +137,31 @@
           (write-to-mongo-db mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def))))))
 
 (defn format-state [old [step-id step-result]]
-  (conj old {:step-id step-id :step-result step-result}))
+  (conj old {":step-id" step-id ":step-result" step-result}))
+
+(defn- post-process-values [k v]
+  (if (and (string? v) (.startsWith v ":"))
+    (keyword (.substring v 1))
+    (to-date-if-date v)))
+
+(defn- post-process-keys [k]
+  (if (and (string? k) (.startsWith k ":"))
+    (keyword (.substring k 1))
+    k))
 
 (defn- read-state [state-map]
-  (let [build-number (get state-map "build-number")
-        steps (get state-map "steps")
+  (let [build-number (get state-map ":build-number")
+        steps (get state-map ":steps")
         state-as-vec (reduce format-state [] steps)
         state-as-string (cheshire/generate-string state-as-vec)
-        state (json-format->pipeline-state (json/read-str state-as-string :key-fn keyword :value-fn post-process-values))]
+        state (json-format->pipeline-state (json/read-str state-as-string :key-fn post-process-keys :value-fn post-process-values))]
     {build-number state}))
 
 (defn- find-builds [mongodb-db mongodb-col max-builds pipeline-def]
   (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
     (mq/with-collection mongodb-db mongodb-col
-                        (mq/find {"hash" pipeline-def-hash})
-                        (mq/sort (array-map "build-number" -1))
+                        (mq/find {":hash" pipeline-def-hash})
+                        (mq/sort (array-map ":build-number" -1))
                         (mq/limit max-builds)
                         (mq/keywordize-fields false))))
 

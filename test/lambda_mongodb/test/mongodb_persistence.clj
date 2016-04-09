@@ -84,7 +84,7 @@
   (testing "should adda timestamp to the map"
     (let [now (clj-time.core/now)]
       (with-redefs-fn {#'clj-time.core/now (fn [] now)}
-        #(is (= {:created-at now "steps" {}}
+        #(is (= {":created-at" now "steps" {}}
                 (p/add-created-at-to-map {"steps" {}})))))))
 
 (deftest test-enrich-pipeline-state->json-format
@@ -92,16 +92,16 @@
     (let [now (clj-time.core/now)]
       (with-redefs-fn {#'clj-time.core/now (fn [] now)
                        #'clojure.core/hash (fn [x] 12345)}
-        #(is (= {"build-number" 42
-                 "is-active"    false
-                 "hash"         12345
-                 :created-at    now
-                 "steps"        {"1"   {"status" "ok" "out" "hallo"}
-                                 "1-1" {"status" "waiting" "out" "hey"}
-                                 "2"   {"status" "failure" "out" "hey"}}}
+        #(is (= {":build-number" 42
+                 ":is-active"    false
+                 ":hash"         12345
+                 ":created-at"    now
+                 ":steps"        {"1"   {":status" ":success" ":out" "hallo"}
+                                 "1-1" {":status" ":waiting" ":out" "hey"}
+                                 "2"   {":status" ":failure" ":out" "hey"}}}
                 (p/enrich-pipeline-state
                   {41 {[1] {:status :running}}
-                   42 {[1]   {:status :ok :out "hallo"}
+                   42 {[1]   {:status :success :out "hallo"}
                        [1 1] {:status :waiting :out "hey"}
                        [2]   {:status :failure :out "hey"}}
                    43 {[1] {:status :success}}}
