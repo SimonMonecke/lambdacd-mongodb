@@ -71,3 +71,14 @@
            (p/json-format->pipeline-state [{:step-id "1" :step-result "someResult"}
                                            {:step-id "1-1" :step-result "someOtherResult"}
                                            {:step-id "1-2" :step-result "someOtherOtherResult"}])))))
+
+(deftest test-read-state
+  (testing "should transform mongo find result to map"
+    (is (= {1234 {'(1)   "someResult"
+                  '(1 2) "someOtherResult"}}
+           (p/read-state {"_id"           42
+                          ":steps"        {"1"   "someResult"
+                                           "1-2" "someOtherResult"}
+                          ":created-at"   t/now
+                          ":build-number" 1234
+                          ":hash"         4224})))))

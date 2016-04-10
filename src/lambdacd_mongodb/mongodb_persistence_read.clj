@@ -38,8 +38,7 @@
     (keyword (.substring k 1))
     k))
 
-; TODO: test
-(defn- read-state [state-map]
+(defn read-state [state-map]
   (let [build-number (get state-map ":build-number")
         steps (get state-map ":steps")
         state-as-vec (reduce format-state [] steps)
