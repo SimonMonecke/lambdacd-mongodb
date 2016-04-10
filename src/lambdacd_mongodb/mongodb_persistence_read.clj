@@ -2,7 +2,6 @@
   (:import (java.util.regex Pattern)
            (com.mongodb MongoException))
   (:require [clojure.string :as str]
-            [lambdacd.util :as util]
             [clj-time.format :as f]
             [clojure.data.json :as json]
             [monger.query :as mq]
@@ -11,8 +10,11 @@
             [lambdacd-mongodb.mongodb-persistence-write :as p-write])
   (:use [com.rpl.specter]))
 
+(defn parse-int [int-str]
+  (Integer/parseInt int-str))
+
 (defn- unformat-step-id [formatted-step-id]
-  (map util/parse-int (str/split formatted-step-id (Pattern/compile "-"))))
+  (map parse-int (str/split formatted-step-id (Pattern/compile "-"))))
 
 (defn- step-json->step [{step-result :step-result step-id :step-id}]
   {(unformat-step-id step-id) step-result})
@@ -22,7 +24,7 @@
 
 (defn- to-date-if-date [v]
   (try
-    (f/parse util/iso-formatter v)
+    (f/parse (f/formatters :date-time) v)
     (catch Throwable t v)))
 
 (defn format-state [old [step-id step-result]]
