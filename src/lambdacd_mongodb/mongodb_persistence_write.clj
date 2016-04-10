@@ -3,7 +3,6 @@
   (:require [clojure.string :as str]
             [clojure.data.json :as json]
             [monger.collection :as mc]
-            [cheshire.core :as cheshire]
             [clj-time.core :as t]
             monger.joda-time
             [clojure.tools.logging :as log])
@@ -62,7 +61,7 @@
        ((partial add-build-number-to-map build-number))
        (add-api-version-to-map)
        ((fn [m] (json/write-str m :key-fn str :value-fn pre-process-values)))
-       (cheshire/parse-string)
+       (json/read-str)
        (add-created-at-to-map)))
 
 (defn write-to-mongo-db [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]

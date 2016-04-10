@@ -6,7 +6,6 @@
             [clj-time.format :as f]
             [clojure.data.json :as json]
             [monger.query :as mq]
-            [cheshire.core :as cheshire]
             monger.joda-time
             [clojure.tools.logging :as log]
             [lambdacd-mongodb.mongodb-persistence-write :as p-write])
@@ -43,7 +42,7 @@
   (let [build-number (get state-map ":build-number")
         steps (get state-map ":steps")
         state-as-vec (reduce format-state [] steps)
-        state-as-string (cheshire/generate-string state-as-vec)
+        state-as-string (json/write-str state-as-vec)
         state (json-format->pipeline-state (json/read-str state-as-string :key-fn post-process-keys :value-fn post-process-values))]
     {build-number state}))
 
