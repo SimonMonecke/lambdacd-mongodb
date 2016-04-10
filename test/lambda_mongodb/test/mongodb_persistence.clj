@@ -1,6 +1,8 @@
 (ns lambda-mongodb.test.mongodb-persistence
   (:require [clojure.test :refer :all]
-            [lambdacd-mongodb.mongodb-persistence :as p]))
+            [lambdacd-mongodb.mongodb-persistence :as p]
+            [clj-time.core :as t]
+            [lambdacd.util :as util]))
 
 (deftest test-clean-states
   (testing "don't change success steps"
@@ -95,10 +97,10 @@
         #(is (= {":build-number" 42
                  ":is-active"    false
                  ":hash"         12345
-                 ":created-at"    now
+                 ":created-at"   now
                  ":steps"        {"1"   {":status" ":success" ":out" "hallo"}
-                                 "1-1" {":status" ":waiting" ":out" "hey"}
-                                 "2"   {":status" ":failure" ":out" "hey"}}}
+                                  "1-1" {":status" ":waiting" ":out" "hey"}
+                                  "2"   {":status" ":failure" ":out" "hey"}}}
                 (p/enrich-pipeline-state
                   {41 {[1] {:status :running}}
                    42 {[1]   {:status :success :out "hallo"}
@@ -107,3 +109,18 @@
                    43 {[1] {:status :success}}}
                   42
                   '("first-step" "second-step"))))))))
+
+(deftest test-post-process-values
+  (testing "should convert a string with prefix : to keyword"
+    (is (= :success
+           (p/post-process-values :status ":success"))))
+  (testing "should not convert a string without prefix : to keyword"
+    (is (= "success"
+           (p/post-process-values :status "success"))))
+  (testing "should not convert any other type, e.g. numbers, to keyword"
+    (is (= 42
+           (p/post-process-values :status 42))))
+  (testing "should convert a date iso string to date"
+    (let [now (t/now)]
+      (is (= now
+             (p/post-process-values :created-at (clj-time.format/unparse util/iso-formatter now)))))))

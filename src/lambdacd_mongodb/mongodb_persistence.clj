@@ -139,7 +139,7 @@
 (defn format-state [old [step-id step-result]]
   (conj old {":step-id" step-id ":step-result" step-result}))
 
-(defn- post-process-values [k v]
+(defn post-process-values [k v]
   (if (and (string? v) (.startsWith v ":"))
     (keyword (.substring v 1))
     (to-date-if-date v)))
