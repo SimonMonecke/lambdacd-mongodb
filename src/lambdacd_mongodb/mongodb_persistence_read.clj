@@ -17,9 +17,8 @@
 (defn- step-json->step [{step-result :step-result step-id :step-id}]
   {(unformat-step-id step-id) step-result})
 
-; TODO: test
-(defn- json-format->pipeline-state [json-map]
-  (into {} (map step-json->step json-map)))
+(defn json-format->pipeline-state [steps-list]
+  (into {} (map step-json->step steps-list)))
 
 (defn- to-date-if-date [v]
   (try

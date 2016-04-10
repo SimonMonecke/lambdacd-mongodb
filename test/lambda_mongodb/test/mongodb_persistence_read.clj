@@ -62,3 +62,12 @@
   (testing "should not convert any other type, e.g. numbers, to keyword"
     (is (= 42
            (p/post-process-keys 42)))))
+
+(deftest test-json-format->pipeline-state
+  (testing "should transform ids and collect all steps in a map"
+    (is (= {'(1)   "someResult"
+            '(1 1) "someOtherResult"
+            '(1 2) "someOtherOtherResult"}
+           (p/json-format->pipeline-state [{:step-id "1" :step-result "someResult"}
+                                           {:step-id "1-1" :step-result "someOtherResult"}
+                                           {:step-id "1-2" :step-result "someOtherOtherResult"}])))))
