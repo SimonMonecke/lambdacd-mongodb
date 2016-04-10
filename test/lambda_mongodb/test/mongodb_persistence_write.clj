@@ -74,3 +74,12 @@
             '(2) {:status :success}}
            (p/state-only-with-status {'(1) {:out "output" :has-been-waiting true :status :running}
                                       '(2) {:out "output2" :trigger-id 42 :status :success}})))))
+
+(deftest test-step-id-lists->string
+  (testing "should transform id list to strings"
+    (is (= {"1"   "someState"
+            "1-1" "someOtherState"
+            "2"   "someOtherOtherState"}
+           (reduce p/step-id-lists->string {} {'(1)   "someState"
+                                               '(1 1) "someOtherState"
+                                               '(2)   "someOtherOtherState"})))))

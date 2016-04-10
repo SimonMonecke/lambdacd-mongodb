@@ -24,7 +24,6 @@
     {}
     state))
 
-; TODO: test
 (defn step-id-lists->string [old [k v]]
   (assoc old (formatted-step-id k) v))
 
