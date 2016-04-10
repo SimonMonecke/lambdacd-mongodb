@@ -124,3 +124,14 @@
     (let [now (t/now)]
       (is (= now
              (p/post-process-values :created-at (clj-time.format/unparse util/iso-formatter now)))))))
+
+(deftest test-post-process-keys
+  (testing "should convert a string with prefix : to keyword"
+    (is (= :status
+           (p/post-process-keys ":status"))))
+  (testing "should not convert a string without prefix : to keyword"
+    (is (= "string-key"
+           (p/post-process-keys "string-key"))))
+  (testing "should not convert any other type, e.g. numbers, to keyword"
+    (is (= 42
+           (p/post-process-keys 42)))))

@@ -144,7 +144,7 @@
     (keyword (.substring v 1))
     (to-date-if-date v)))
 
-(defn- post-process-keys [k]
+(defn post-process-keys [k]
   (if (and (string? k) (.startsWith k ":"))
     (keyword (.substring k 1))
     k))
