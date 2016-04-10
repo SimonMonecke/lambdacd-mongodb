@@ -83,3 +83,11 @@
            (reduce p/step-id-lists->string {} {'(1)   "someState"
                                                '(1 1) "someOtherState"
                                                '(2)   "someOtherOtherState"})))))
+
+(deftest test-pre-process-values
+  (testing "should convert keywords to string with prefix :"
+    (is (= ":value"
+           (p/pre-process-values :key :value))))
+  (testing "should just return any other type"
+    (is (= 42
+           (p/pre-process-values :key 42)))))

@@ -43,8 +43,7 @@
 (defn add-created-at-to-map [m]
   (assoc m ":created-at" (t/now)))
 
-; TODO: test
-(defn- pre-process-values [k v]
+(defn pre-process-values [_ v]
   (if (keyword? v)
     (str v)
     v))
