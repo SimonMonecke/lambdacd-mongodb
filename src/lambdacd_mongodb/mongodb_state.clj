@@ -1,5 +1,6 @@
 (ns lambdacd-mongodb.mongodb-state
-  (:require [lambdacd-mongodb.mongodb-persistence :as persistence]
+  (:require [lambdacd-mongodb.mongodb-persistence-read :as persistence-read]
+            [lambdacd-mongodb.mongodb-persistence-write :as persistence-write]
             [lambdacd.internal.default-pipeline-state :as default-pipeline-state]
             [clj-time.core :as t]
             [lambdacd.internal.pipeline-state :as pipeline-state-protocol]
@@ -10,7 +11,7 @@
 (defn initial-pipeline-state [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (when (< max-builds 1)
     (log/error "LambdaCD-MongoDB: max-builds must be greater than zero"))
-  (persistence/read-build-history-from mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def))
+  (persistence-read/read-build-history-from mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def))
 
 ; copyied from lambdacd.internal.default-pipeline-state
 
@@ -38,7 +39,7 @@
   (if (not (nil? state))
     (let [old-state @state
           new-state (swap! state (partial update-pipeline-state build-number step-id step-result))]
-      (persistence/write-build-history mongodb-uri mongodb-db mongodb-col persist-the-output-of-running-steps build-number old-state new-state ttl pipeline-def))))
+      (persistence-write/write-build-history mongodb-uri mongodb-db mongodb-col persist-the-output-of-running-steps build-number old-state new-state ttl pipeline-def))))
 
 ; copied from lambdacd.internal.default-pipeline-state, change parameters and record name
 
