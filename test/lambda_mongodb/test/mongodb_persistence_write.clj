@@ -36,14 +36,6 @@
       #(is (= {:hash 12345}
               (p/add-hash-to-map '("step1" "step2") {}))))))
 
-(deftest test-add-is-active-to-map
-  (testing "should add a is-active flag: true"
-    (is (= {:is-active true :steps {"1" {:status :success} "2" {:status :waiting}}}
-           (p/add-is-active-to-map {:steps {"1" {:status :success} "2" {:status :waiting}}}))))
-  (testing "should add a is-active flag: false"
-    (is (= {:is-active false :steps {"1" {:status :success} "2" {:status :failure}}}
-           (p/add-is-active-to-map {:steps {"1" {:status :success} "2" {:status :failure}}})))))
-
 (deftest test-add-build-number-to-map
   (testing "should add the builder-number to the map"
     (is (= {:build-number 123 :steps {}}
@@ -62,7 +54,6 @@
       (with-redefs-fn {#'clj-time.core/now (fn [] now)
                        #'clojure.core/hash (fn [x] 12345)}
         #(is (= {":build-number" 42
-                 ":is-active"    false
                  ":hash"         12345
                  ":created-at"   now
                  ":steps"        {"1"   {":status" ":success" ":out" "hallo"}

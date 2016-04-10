@@ -18,31 +18,6 @@
 (defn- formatted-step-id [step-id]
   (str/join "-" step-id))
 
-(defn- desc [a b]
-  (compare b a))
-
-(defn- root-step? [[step-id _]]
-  (= 1 (count step-id)))
-
-(defn- root-step-id [[step-id _]]
-  (first step-id))
-
-(defn- step-result [[_ step-result]]
-  step-result)
-
-(defn- status-for-steps [step-ids-and-results]
-  (let [accumulated-status (->> step-ids-and-results
-                                (filter root-step?)
-                                (sort-by root-step-id desc)
-                                (first)
-                                (step-result)
-                                (:status))]
-    (or accumulated-status :unknown)))
-
-(defn- is-inactive? [build-state]
-  (let [status (status-for-steps build-state)]
-    (not (or (= status :running) (= status :waiting) (= status :unknown)))))
-
 ; own functions
 
 (defn build-has-only-a-trigger [build]
@@ -70,9 +45,6 @@
   (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
     (assoc m :hash pipeline-def-hash)))
 
-(defn add-is-active-to-map [m]
-  (assoc m :is-active (not (is-inactive? (:steps m)))))
-
 (defn add-build-number-to-map [build-number m]
   (assoc m :build-number build-number))
 
@@ -90,7 +62,6 @@
        ((partial reduce step-id-lists->string {}))
        (wrap-in-map)
        ((partial add-hash-to-map pipeline-def))
-       (add-is-active-to-map)
        ((partial add-build-number-to-map build-number))
        ((fn [m] (json/write-str m :key-fn str :value-fn pre-process-values)))
        (cheshire/parse-string)
