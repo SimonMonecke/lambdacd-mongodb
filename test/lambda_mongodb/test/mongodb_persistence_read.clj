@@ -82,3 +82,31 @@
                           ":created-at"   t/now
                           ":build-number" 1234
                           ":hash"         4224})))))
+
+(deftest test-set-step-message
+  (testing "should set message in running steps"
+    (is (= '({1234 {'(1)   {:status :success}
+                    '(1 2) {:details [{:label "LambdaCD-MongoDB:", :details [{:label "Running step state was modified by a restart"}]}]
+                            :status  :running}}}
+              {1233 {'(1)   {:status :success}
+                     '(1 2) {:details [{:label "LambdaCD-MongoDB:", :details [{:label "Running step state was modified by a restart"}]}]
+                             :status  :running}
+                     '(2)   {:status :failure}}})
+           (p/set-step-message '({1234 {'(1)   {:status :success}
+                                        '(1 2) {:status :running}}}
+                                  {1233 {'(1)   {:status :success}
+                                         '(1 2) {:status :running}
+                                         '(2)   {:status :failure}}})))))
+  (testing "should set message in waiting steps"
+    (is (= '({1234 {'(1)   {:status :success}
+                    '(1 2) {:details [{:label "LambdaCD-MongoDB:", :details [{:label "Waiting step state was modified by a restart"}]}]
+                            :status  :waiting}}}
+              {1233 {'(1)   {:status :success}
+                     '(1 2) {:details [{:label "LambdaCD-MongoDB:", :details [{:label "Waiting step state was modified by a restart"}]}]
+                             :status  :waiting}
+                     '(2)   {:status :failure}}})
+           (p/set-step-message '({1234 {'(1)   {:status :success}
+                                        '(1 2) {:status :waiting}}}
+                                  {1233 {'(1)   {:status :success}
+                                         '(1 2) {:status :waiting}
+                                         '(2)   {:status :failure}}}))))))

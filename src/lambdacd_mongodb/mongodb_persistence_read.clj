@@ -82,7 +82,6 @@
             :details [{:label msg}]}]
           build-list))
 
-; TODO: test
 (defn set-step-message [build-list]
   (->> build-list
        (set-step-message-specter :waiting "Waiting step state was modified by a restart")
