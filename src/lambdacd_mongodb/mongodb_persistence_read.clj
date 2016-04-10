@@ -17,6 +17,7 @@
 (defn- step-json->step [{step-result :step-result step-id :step-id}]
   {(unformat-step-id step-id) step-result})
 
+; TODO: test
 (defn- json-format->pipeline-state [json-map]
   (into {} (map step-json->step json-map)))
 
@@ -38,6 +39,7 @@
     (keyword (.substring k 1))
     k))
 
+; TODO: test
 (defn- read-state [state-map]
   (let [build-number (get state-map ":build-number")
         steps (get state-map ":steps")
@@ -82,11 +84,13 @@
             :details [{:label msg}]}]
           build-list))
 
+; TODO: test
 (defn set-step-message [build-list]
   (->> build-list
        (set-step-message-specter :waiting "Waiting step state was modified by a restart")
        (set-step-message-specter :running "Running step state was modified by a restart")))
 
+; TODO: test
 (defn remove-artifacts [build-list]
   (setval [ALL
            ALL
@@ -101,6 +105,7 @@
           [{:label "Artifacts are deleted after a restart"}]
           build-list))
 
+; TODO: test
 (defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)

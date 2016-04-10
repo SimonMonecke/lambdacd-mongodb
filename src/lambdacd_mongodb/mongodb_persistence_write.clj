@@ -1,14 +1,8 @@
 (ns lambdacd-mongodb.mongodb-persistence-write
-  (:import (java.util.regex Pattern)
-           (java.io File)
-           (org.joda.time DateTime)
-           (com.mongodb MongoException))
+  (:import (com.mongodb MongoException))
   (:require [clojure.string :as str]
-            [lambdacd.util :as util]
-            [clj-time.format :as f]
             [clojure.data.json :as json]
             [monger.collection :as mc]
-            [monger.query :as mq]
             [cheshire.core :as cheshire]
             [clj-time.core :as t]
             monger.joda-time
@@ -18,12 +12,11 @@
 (defn- formatted-step-id [step-id]
   (str/join "-" step-id))
 
-; own functions
-
 (defn build-has-only-a-trigger [build]
   (every? #(= % 1)
           (select [ALL FIRST LAST] build)))
 
+; TODO: test
 (defn state-only-with-status [state]
   (reduce
     (fn [old [k v]]
@@ -32,6 +25,7 @@
     {}
     state))
 
+; TODO: test
 (defn step-id-lists->string [old [k v]]
   (assoc old (formatted-step-id k) v))
 
@@ -51,6 +45,7 @@
 (defn add-created-at-to-map [m]
   (assoc m ":created-at" (t/now)))
 
+; TODO: test
 (defn- pre-process-values [k v]
   (if (keyword? v)
     (str v)
