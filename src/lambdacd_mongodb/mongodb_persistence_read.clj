@@ -8,7 +8,8 @@
             [monger.query :as mq]
             [cheshire.core :as cheshire]
             monger.joda-time
-            [clojure.tools.logging :as log])
+            [clojure.tools.logging :as log]
+            [lambdacd-mongodb.mongodb-persistence-write :as p-write])
   (:use [com.rpl.specter]))
 
 (defn- unformat-step-id [formatted-step-id]
@@ -49,7 +50,7 @@
 (defn- find-builds [mongodb-db mongodb-col max-builds pipeline-def]
   (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
     (mq/with-collection mongodb-db mongodb-col
-                        (mq/find {":hash" pipeline-def-hash})
+                        (mq/find {":hash" pipeline-def-hash ":api-version" p-write/persistence-api-version})
                         (mq/sort (array-map ":build-number" -1))
                         (mq/limit max-builds)
                         (mq/keywordize-fields false))))

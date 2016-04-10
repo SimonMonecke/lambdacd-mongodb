@@ -36,6 +36,11 @@
       #(is (= {:hash 12345}
               (p/add-hash-to-map '("step1" "step2") {}))))))
 
+(deftest test-add-api-version-to-map
+  (testing "should add api version to the map"
+    (is (= {:api-version p/persistence-api-version}
+           (p/add-api-version-to-map {})))))
+
 (deftest test-add-build-number-to-map
   (testing "should add the builder-number to the map"
     (is (= {:build-number 123 :steps {}}
@@ -56,6 +61,7 @@
         #(is (= {":build-number" 42
                  ":hash"         12345
                  ":created-at"   now
+                 ":api-version"  p/persistence-api-version
                  ":steps"        {"1"   {":status" ":success" ":out" "hallo"}
                                   "1-1" {":status" ":waiting" ":out" "hey"}
                                   "2"   {":status" ":failure" ":out" "hey"}}}

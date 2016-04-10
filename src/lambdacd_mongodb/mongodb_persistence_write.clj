@@ -9,6 +9,8 @@
             [clojure.tools.logging :as log])
   (:use [com.rpl.specter]))
 
+(def persistence-api-version 2)
+
 (defn- formatted-step-id [step-id]
   (str/join "-" step-id))
 
@@ -43,6 +45,9 @@
 (defn add-created-at-to-map [m]
   (assoc m ":created-at" (t/now)))
 
+(defn add-api-version-to-map [m]
+  (assoc m :api-version persistence-api-version))
+
 (defn pre-process-values [_ v]
   (if (keyword? v)
     (str v)
@@ -55,6 +60,7 @@
        (wrap-in-map)
        ((partial add-hash-to-map pipeline-def))
        ((partial add-build-number-to-map build-number))
+       (add-api-version-to-map)
        ((fn [m] (json/write-str m :key-fn str :value-fn pre-process-values)))
        (cheshire/parse-string)
        (add-created-at-to-map)))
