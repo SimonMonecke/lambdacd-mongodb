@@ -87,7 +87,6 @@
        (set-step-message-specter :waiting "Waiting step state was modified by a restart")
        (set-step-message-specter :running "Running step state was modified by a restart")))
 
-; TODO: test
 (defn remove-artifacts [build-list]
   (setval [ALL
            ALL

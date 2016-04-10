@@ -110,3 +110,16 @@
                                   {1233 {'(1)   {:status :success}
                                          '(1 2) {:status :waiting}
                                          '(2)   {:status :failure}}}))))))
+
+(deftest test-remove-artifacts
+  (testing "should remove artifcats and add message"
+    (is (= '({1234 {'(1)   {:details nil}
+                    '(1 2) {:details [{:label "Artifacts", :details [{:label "Artifacts are deleted after a restart"}]}]}}}
+              {1233 {'(1)   {:details [{:label "someOtherDetails", :details [{:label "someDetail"}]}]}
+                     '(1 2) {:details [{:label "Artifacts", :details [{:label "Artifacts are deleted after a restart"}]}]}
+                     '(2)   {:details nil}}})
+           (p/remove-artifacts '({1234 {'(1)   {}
+                                        '(1 2) {:details [{:label "Artifacts", :details [{:label "Artifact 1"} {:label "Artifact 2"}]}]}}}
+                                  {1233 {'(1)   {:details [{:label "someOtherDetails", :details [{:label "someDetail"}]}]}
+                                         '(1 2) {:details [{:label "Artifacts", :details [{:label "Artifact 1"} {:label "Artifact 2"}]}]}
+                                         '(2)   {}}}))))))
