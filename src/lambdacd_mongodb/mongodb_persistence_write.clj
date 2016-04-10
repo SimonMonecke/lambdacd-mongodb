@@ -16,7 +16,6 @@
   (every? #(= % 1)
           (select [ALL FIRST LAST] build)))
 
-; TODO: test
 (defn state-only-with-status [state]
   (reduce
     (fn [old [k v]]

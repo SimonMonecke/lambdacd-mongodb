@@ -67,3 +67,10 @@
                    43 {[1] {:status :success}}}
                   42
                   '("first-step" "second-step"))))))))
+
+(deftest test-state-only-with-status
+  (testing "should only select field :status"
+    (is (= {'(1) {:status :running}
+            '(2) {:status :success}}
+           (p/state-only-with-status {'(1) {:out "output" :has-been-waiting true :status :running}
+                                      '(2) {:out "output2" :trigger-id 42 :status :success}})))))
