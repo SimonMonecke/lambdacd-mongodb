@@ -8,7 +8,8 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
 * Only builds with the same defintion can be restored (-> [LambdaCD Issue #6](https://github.com/flosell/lambdacd/issues/6))
 * Only builds with at least two active steps are stored because you don't need builds waiting for a trigger 
-* Tested with LambdaCD version 0.6.1
+* Tested with LambdaCD version 0.8.0
+* String keys in the global map starting with the prefix ":" will be restored as keyword and not as string
 
 ## Example
 
