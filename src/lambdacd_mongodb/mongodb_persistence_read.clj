@@ -1,12 +1,10 @@
 (ns lambdacd-mongodb.mongodb-persistence-read
-  (:import (java.util.regex Pattern)
-           (com.mongodb MongoException))
+  (:import (java.util.regex Pattern))
   (:require [clojure.string :as str]
             [clj-time.format :as f]
             [clojure.data.json :as json]
             [monger.query :as mq]
             monger.joda-time
-            [clojure.tools.logging :as log]
             [lambdacd-mongodb.mongodb-persistence-write :as p-write])
   (:use [com.rpl.specter]))
 

@@ -1,8 +1,7 @@
 (ns lambda-mongodb.test.mongodb-persistence-write
   (:require [clojure.test :refer :all]
             [lambdacd-mongodb.mongodb-persistence-write :as p]
-            [clj-time.core :as t]
-            [lambdacd.util :as util]))
+            [clj-time.core :as t]))
 
 (deftest test-build-has-only-a-trigger
   (testing "build with only a trigger"

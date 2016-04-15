@@ -4,7 +4,6 @@
             [lambdacd.internal.default-pipeline-state :as default-pipeline-state]
             [clj-time.core :as t]
             [lambdacd.internal.pipeline-state :as pipeline-state-protocol]
-            [clojure.core.async :as async]
             [monger.core :as mg]
             [clojure.tools.logging :as log]))
 
@@ -12,8 +11,6 @@
   (when (< max-builds 1)
     (log/error "LambdaCD-MongoDB: max-builds must be greater than zero"))
   (persistence-read/read-build-history-from mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def))
-
-; copyied from lambdacd.internal.default-pipeline-state
 
 (defn- put-if-not-present [m k v]
   (if (contains? m k)
@@ -32,16 +29,12 @@
 (defn- update-pipeline-state [build-number step-id step-result current-state]
   (assoc current-state build-number (update-current-run step-id step-result (get current-state build-number))))
 
-; copied from lambdacd.internal.default-pipeline-state, change function name and parameters
-
 (defn update-legacy
   [persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state ttl pipeline-def]
   (if (not (nil? state))
     (let [old-state @state
           new-state (swap! state (partial update-pipeline-state build-number step-id step-result))]
       (persistence-write/write-build-history mongodb-uri mongodb-db mongodb-col persist-the-output-of-running-steps build-number old-state new-state ttl pipeline-def))))
-
-; copied from lambdacd.internal.default-pipeline-state, change parameters and record name
 
 (defrecord MongoDBState [state-atom persist-the-output-of-running-steps mongodb-uri mongodb-db mongodb-col ttl pipeline-def]
   pipeline-state-protocol/PipelineStateComponent
