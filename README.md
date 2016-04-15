@@ -2,7 +2,7 @@
 
 [![Clojars Project](http://clojars.org/lambdacd-mongodb/latest-version.svg)](http://clojars.org/lambdacd-mongodb)
 
-If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment without persistence you certainly noticed that after restarting LambdaCD the build history is lost. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restores it at the next startup.
+If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment without persistence you certainly noticed that the build history is lost after restarting LambdaCD. lambdacd-mongodb stores the state of your pipeline in a MongoDB and it restores it at the next startup.
 
 ## Nice to know
 
@@ -17,16 +17,16 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 2. Run `lein run`
 3. Let the pipeline run for a few times
 4. Stop LambdaCD by pressing strg-c in your terminal
-5. Restart LambdaCD bei running `lein run` again
+5. Restart LambdaCD by running `lein run` again
 6. The build history should still be there
 
 ## Configuration
 
 1. To use lambdacd-mongodb you have to create a map containing your MongoDB configuration.
    * The :col key specifies the collection which is used to store all builds from one pipeline. Do not use a collection for more than one pipeline!
-   * The :max-builds key is optional (default: 20) and definies how many inactive builds are loaded. Active builds are thrown away because you can not continue them.
+   * The :max-builds key is optional (default: 20) and definies how many inactive builds are restored.
    * The :ttl key is optional (default: 7) and definies how many days the builds should be stored
-   * The :mark-running-steps-as is optional (default: :killed). If you set it to :failure all running steps will be marked with the status :failure. If set to :success, running steps will me marked as :success. Please be advised that configurating something other than :success, :failure or :killed will leave your pipeline in an undefined state.
+   * The :mark-running-steps-as is optional (default: :killed). If you set it to :failure all running steps will be marked with the status :failure. If you set to :success, running steps will me marked as :success. Please be advised that configurating something other than :success, :failure or :killed will leave your pipeline in an undefined state.
    * The :persist-the-output-of-running-steps is optional (default: false). If you set it to true the state of the pipeline will be persisted if the output of any step is changed (-> many write operations). If you set it to false the state of the pipeline will only be persisted if the status of any step is changed (-> fewer write operations).
 2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg
 
@@ -52,6 +52,7 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
 - [x] Exception-Handling
 - [x] Tests
+- [x] More tests 
 
 ## License
 
