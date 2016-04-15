@@ -67,7 +67,7 @@
           new-status
           build-list))
 
-(defn set-status-of-step [build-list mark-running-steps-as]
+(defn set-status-of-step [mark-running-steps-as build-list]
   (->> build-list
        (set-status-of-step-specter :waiting :killed)
        (set-status-of-step-specter :running mark-running-steps-as)))
@@ -105,10 +105,10 @@
 
 ; TODO: test
 (defn read-build-history-from [mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
-  (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
-        build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
-        states (map read-state build-state-maps)
-        wo-artifacts (remove-artifacts states)
-        with-killed-message (set-step-message wo-artifacts)
-        wo-running-or-waiting-states (set-status-of-step with-killed-message mark-running-steps-as)]
-    (into {} wo-running-or-waiting-states)))
+  (->> (find-builds mongodb-db mongodb-col max-builds pipeline-def)
+       (map (fn [build] (monger.conversion/from-db-object build false)))
+       (map read-state)
+       (remove-artifacts)
+       (set-step-message)
+       (set-status-of-step mark-running-steps-as)
+       (into {})))

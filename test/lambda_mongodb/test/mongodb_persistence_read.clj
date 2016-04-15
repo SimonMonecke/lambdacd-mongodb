@@ -9,33 +9,38 @@
     (is (=
           '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
              {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
-          (p/set-status-of-step '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
-                                   {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :killed))))
+          (p/set-status-of-step :killed
+                                '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
+                                   {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}})))))
   (testing "don't change failed or success steps"
     (is (=
           '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
              {7812 {'(1) {:status :success} '(2) {:status :failed :foo :bar} '(3) {:status :success}}})
-          (p/set-status-of-step '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
-                                   {7812 {'(1) {:status :success} '(2) {:status :failed :foo :bar} '(3) {:status :success}}}) :killed))))
+          (p/set-status-of-step :killed
+                                '({1234 {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success}}}
+                                   {7812 {'(1) {:status :success} '(2) {:status :failed :foo :bar} '(3) {:status :success}}})))))
   (testing "only change running or waiting but not success or failed steps"
     (is (=
           '({1234 {'(1) {:status :killed} '(2 1) {:status :success} '(2) {:status :killed}}}
              {7812 {'(1) {:status :killed} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
-          (p/set-status-of-step '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
-                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :killed))))
+          (p/set-status-of-step :killed
+                                '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
+                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}})))))
   (testing "set running steps to :failure if mark-running-steps-as is :failure"
     (is (=
           '({1234 {'(1) {:status :killed} '(2 1) {:status :success} '(2) {:status :failure}}}
              {7812 {'(1) {:status :failure} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
-          (p/set-status-of-step '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
-                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :failure))))
+          (p/set-status-of-step :failure
+                                '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
+                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}})))))
 
   (testing "set running steps to :success if mark-running-steps-as is :success"
     (is (=
           '({1234 {'(1) {:status :killed} '(2 1) {:status :success} '(2) {:status :success}}}
              {7812 {'(1) {:status :success} '(2) {:status :success :foo :bar} '(3) {:status :success}}})
-          (p/set-status-of-step '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
-                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}) :success)))))
+          (p/set-status-of-step :success
+                                '({1234 {'(1) {:status :waiting} '(2 1) {:status :success} '(2) {:status :running}}}
+                                   {7812 {'(1) {:status :running} '(2) {:status :success :foo :bar} '(3) {:status :success}}}))))))
 
 (deftest test-post-process-values
   (testing "should convert a string with prefix : to keyword"
