@@ -8,10 +8,10 @@
             [monger.core :as mg]
             [clojure.tools.logging :as log]))
 
-(defn initial-pipeline-state [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
+(defn initial-pipeline-state [mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (when (< max-builds 1)
     (log/error "LambdaCD-MongoDB: max-builds must be greater than zero"))
-  (persistence-read/read-build-history-from mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def))
+  (persistence-read/read-build-history-from mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def))
 
 ; copyied from lambdacd.internal.default-pipeline-state
 
@@ -58,8 +58,7 @@
   (try
     (let [conn (:conn (mg/connect-via-uri (:uri mc)))
           db (mg/get-db conn (:db mc))
-          state-atom (atom (initial-pipeline-state (:uri mc)
-                                                   db
+          state-atom (atom (initial-pipeline-state db
                                                    (:col mc)
                                                    (or (:max-builds mc) 20)
                                                    (or (:mark-running-steps-as mc) :killed)
@@ -99,7 +98,7 @@
   (log/debug config)
   (let [mongodb-persistence (get-mongodb-cfg config)]
     (if (nil? mongodb-persistence)
-      (do (log/error "LambdaCD-MongoDB: Can't init persistence.")
+      (do (log/error "LambdaCD-MongoDB: Can't initialize persistence")
           (log/error "Use fallback: LambdaCD-Default-Persistence")
           (default-pipeline-state/new-default-pipeline-state config))
       (do

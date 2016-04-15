@@ -50,11 +50,11 @@
 
 (defn- find-builds [mongodb-db mongodb-col max-builds pipeline-def]
   (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
-    (mq/with-collection mongodb-db mongodb-col
-                        (mq/find {":hash" pipeline-def-hash ":api-version" p-write/persistence-api-version})
-                        (mq/sort (array-map ":build-number" -1))
-                        (mq/limit max-builds)
-                        (mq/keywordize-fields false))))
+    (doall (mq/with-collection mongodb-db mongodb-col
+                               (mq/find {":hash" pipeline-def-hash ":api-version" p-write/persistence-api-version})
+                               (mq/sort (array-map ":build-number" -1))
+                               (mq/limit max-builds)
+                               (mq/keywordize-fields false)))))
 
 (defn set-status-of-step-specter [old-status new-status build-list]
   (setval [ALL                                              ;Container
@@ -104,18 +104,11 @@
           build-list))
 
 ; TODO: test
-(defn read-build-history-from [mongodb-uri mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
+(defn read-build-history-from [mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (let [build-state-seq (find-builds mongodb-db mongodb-col max-builds pipeline-def)
         build-state-maps (map (fn [build] (monger.conversion/from-db-object build false)) build-state-seq)
         states (map read-state build-state-maps)
         wo-artifacts (remove-artifacts states)
         with-killed-message (set-step-message wo-artifacts)
         wo-running-or-waiting-states (set-status-of-step with-killed-message mark-running-steps-as)]
-    (try
-      (into {} wo-running-or-waiting-states)
-      (catch MongoException e
-        (log/error (str "LambdaCD-MongoDB: Read from DB: Can't connect MongoDB server \"" mongodb-uri "\""))
-        (log/error e))
-      (catch Exception e
-        (log/error "LambdaCD-MongoDB: Read from DB: An unexpected error occurred")
-        (log/error "LambdaCD-MongoDB: caught" (.getMessage e))))))
+    (into {} wo-running-or-waiting-states)))
