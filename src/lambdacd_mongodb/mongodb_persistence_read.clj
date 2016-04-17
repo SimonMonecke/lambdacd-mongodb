@@ -48,11 +48,12 @@
 
 (defn- find-builds [mongodb-db mongodb-col max-builds pipeline-def]
   (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
-    (doall (mq/with-collection mongodb-db mongodb-col
-                               (mq/find {":hash" pipeline-def-hash ":api-version" p-write/persistence-api-version})
-                               (mq/sort (array-map ":build-number" -1))
-                               (mq/limit max-builds)
-                               (mq/keywordize-fields false)))))
+    (doall (map #(monger.conversion/from-db-object % false)
+                (mq/with-collection mongodb-db mongodb-col
+                                    (mq/find {":hash" pipeline-def-hash ":api-version" p-write/persistence-api-version})
+                                    (mq/sort (array-map ":build-number" -1))
+                                    (mq/limit max-builds)
+                                    (mq/keywordize-fields false))))))
 
 (defn set-status-of-step-specter [old-status new-status build-list]
   (setval [ALL                                              ;Container
@@ -101,10 +102,8 @@
           [{:label "Artifacts are deleted after a restart"}]
           build-list))
 
-; TODO: test
 (defn read-build-history-from [mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (->> (find-builds mongodb-db mongodb-col max-builds pipeline-def)
-       (map (fn [build] (monger.conversion/from-db-object build false)))
        (map read-state)
        (remove-artifacts)
        (set-step-message)
