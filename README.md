@@ -28,12 +28,19 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
    * The :ttl key is optional (default: 7) and definies how many days the builds should be stored
    * The :mark-running-steps-as is optional (default: :killed). If you set it to :failure all running steps will be marked with the status :failure. If you set to :success, running steps will me marked as :success. Please be advised that configurating something other than :success, :failure or :killed will leave your pipeline in an undefined state.
    * The :persist-the-output-of-running-steps is optional (default: false). If you set it to true the state of the pipeline will be persisted if the output of any step is changed (-> many write operations). If you set it to false the state of the pipeline will only be persisted if the status of any step is changed (-> fewer write operations).
+   * The :hosts key specifies the hosts of the MongoDB. The key is mandatory to form a URI.
+   * The :user, :password and :port keys are optional. If you set them, they will be used to augment the URI.
+   * The :uri key specifies the URI of the MongoDB. This key is considered deprecated and will only be used as a fallback if the :hosts key is not specified
 2. Add the mongodb configuration map to the main configuration by using the key name :mongodb-cfg
 
 ```clojure
 (defn -main [& args]
   (let [home-dir (util/create-temp-dir)
-        mongodb-cfg {:uri          "mongodb://localhost:27017/lambdacd"
+        mongodb-cfg {:user         "user"
+                     :uri          "mongodb://localhost:27017/lambdacd"
+                     :password     "password"
+                     :hosts        ["localhost"]
+                     :port         27017
                      :db           "lambdacd"
                      :col          "test-project"
                      :max-builds   10
@@ -47,6 +54,8 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
         pipeline (lambdacd.core/assemble-pipeline pipeline-def config (mongodb-state/new-mongodb-state config))
         [...]
 ```
+
+   * In this example the URI formed is `mongodb://user:password@localhost:27017/lambdacd`
 
 ## TODO
 
