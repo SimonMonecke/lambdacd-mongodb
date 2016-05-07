@@ -25,13 +25,14 @@
 
 (defn -main [& args]
   (let [home-dir (util/create-temp-dir)
-        mongodb-cfg {:uri          "mongodb://localhost:27017/lambdacd"
-                     :db           "lambdacd"
-                     :col          "test-project"
-                     :max-builds   10
-                     :ttl          7
-                     :mark-running-steps-as :failure
-                     :pipeline-def pipeline-def
+        mongodb-cfg {:hosts                               ["localhost"]
+                     :port                                "27017"
+                     :db                                  "lambdacd"
+                     :col                                 "test-project"
+                     :max-builds                          10
+                     :ttl                                 7
+                     :mark-running-steps-as               :failure
+                     :pipeline-def                        pipeline-def
                      :persist-the-output-of-running-steps false}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
