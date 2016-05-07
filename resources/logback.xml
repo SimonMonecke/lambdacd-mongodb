@@ -5,7 +5,7 @@
         </encoder>
     </appender>
 
-    <logger name="console-logger" level="DEBUG"/>
+    <logger name="org.mongodb.driver" level="ERROR"/>
 
     <root level="INFO">
         <appender-ref ref="MAIN"/>
