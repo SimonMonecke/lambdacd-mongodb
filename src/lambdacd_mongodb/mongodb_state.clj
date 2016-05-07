@@ -75,11 +75,36 @@
         common-keys (clojure.set/intersection keyset needed-keys)]
     (clojure.set/difference needed-keys common-keys)))
 
+(defn uri-can-be-formed [mc]
+  (let [hosts (:hosts mc)]
+    (not (or (nil? hosts) (empty? hosts)))))
+
+(defn get-hosts [mc]
+  (let [hosts (:hosts mc)
+        port (:port mc)]
+    (if (nil? port)
+      (clojure.string/join "," hosts)
+      (clojure.string/join "," (map (fn [host] (str host ":" port)) hosts)))))
+
+(defn form-uri [mc]
+  (let [user (:user mc)
+        password (:password mc)
+        authentication (if (or (nil? user) (nil? password)) "" (str user ":" password "@"))
+        db (:db mc)
+        hosts (get-hosts mc)]
+    (str "mongodb://" authentication hosts "/" db)))
+
+(defn add-uri [mc]
+  (if (uri-can-be-formed mc)
+    (assoc mc :uri (form-uri mc))
+    mc))
+
 (defn check-mongodb-keys [mc]
-  (let [missing-keys (get-missing-keys mc)]
-    (if (not (empty? missing-keys))
-      (log/error "LambdaCD-MongoDB: Can't find key(s):" missing-keys)
-      (init-mongodb mc))))
+  (let [mc-with-uri (add-uri mc)
+        missing-keys (get-missing-keys mc-with-uri)]
+    (if (empty? missing-keys)
+      mc-with-uri
+      (log/error "LambdaCD-MongoDB: Can't find key(s):" missing-keys))))
 
 (defn get-mongodb-cfg [c]
   (let [mongodb-cfg (:mongodb-cfg c)]
@@ -87,13 +112,16 @@
       (log/error "LambdaCD-MongoDB: Can't find key \":mongodb-cfg\" in your config")
       (check-mongodb-keys mongodb-cfg))))
 
+(defn use-default-persistence [config]
+  (log/error "LambdaCD-MongoDB: Can't initialize persistence")
+  (log/error "Use fallback: LambdaCD-Default-Persistence")
+  (default-pipeline-state/new-default-pipeline-state config))
+
 (defn new-mongodb-state [config]
   (log/debug config)
-  (let [mongodb-persistence (get-mongodb-cfg config)]
-    (if (nil? mongodb-persistence)
-      (do (log/error "LambdaCD-MongoDB: Can't initialize persistence")
-          (log/error "Use fallback: LambdaCD-Default-Persistence")
-          (default-pipeline-state/new-default-pipeline-state config))
-      (do
-        (log/info "LambdaCD-MongoDB: Initizied MongoDB")
-        mongodb-persistence))))
+  (if-let [mongodb-config (get-mongodb-cfg config)]
+    (if-let [mongodb-persistence (init-mongodb mongodb-config)]
+      (do (log/info "LambdaCD-MongoDB: Initialized MongoDB")
+          mongodb-persistence)
+      (use-default-persistence config))
+    (use-default-persistence config)))
