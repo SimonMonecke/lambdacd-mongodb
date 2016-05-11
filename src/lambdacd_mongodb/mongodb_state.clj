@@ -47,7 +47,7 @@
     (moncol/update-by-id db dbcollection :next-build-number {:value next} {:upsert true})
     next))
 
-(defrecord MongoDBState [state-atom persist-the-output-of-running-steps mongodb-uri mongodb-db mongodb-col ttl pipeline-def]
+(defrecord MongoDBState [state-atom persist-the-output-of-running-steps mongodb-uri mongodb-db mongodb-col ttl pipeline-def use-readable-build-numbers?]
   pipeline-state-protocol/PipelineStateComponent
   (update [self build-number step-id step-result]
     (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
@@ -56,8 +56,9 @@
   (get-internal-state [self]
     state-atom)
   (next-build-number [self]
-    (quot (System/currentTimeMillis) 1000)
-    (next-build-number! self)
+    (if use-readable-build-numbers?
+      (next-build-number! self)
+      (quot (System/currentTimeMillis) 1000))
     ))
 
 (defn init-mongodb [mc]
@@ -75,7 +76,8 @@
                       db
                       (:col mc)
                       (or (:ttl mc) 7)
-                      (:pipeline-def mc)))
+                      (:pipeline-def mc)
+                      (or (:use-readable-build-numbers mc) false)))
     (catch Exception e
       (log/error e "LambdaCD-MongoDB: Failed to initialize MongoDB"))))
 
