@@ -47,7 +47,8 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
                      :ttl          7
                      :mark-running-steps-as :killed
                      :pipeline-def pipeline-def
-                     :persist-the-output-of-running-steps false}
+                     :persist-the-output-of-running-steps false
+                     :use-readable-build-numbers true}
         config {:mongodb-cfg              mongodb-cfg
                 :home-dir                 home-dir
                 :dont-wait-for-completion false}
