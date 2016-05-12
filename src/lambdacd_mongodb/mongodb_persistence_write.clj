@@ -13,7 +13,7 @@
 (defn- formatted-step-id [step-id]
   (str/join "-" step-id))
 
-(defn build-has-only-a-trigger [build]
+(defn only-trigger? [build]
   (every? #(= % 1)
           (select [ALL FIRST LAST] build)))
 
@@ -77,9 +77,9 @@
         (log/error "LambdaCD-MongoDB: Write to DB: An unexpected error occurred")
         (log/error "LambdaCD-MongoDB: caught" (.getMessage e))))))
 
-(defn write-build-history [mongodb-uri mongodb-db mongodb-col persist-the-output-of-running-steps build-number old-state new-state ttl pipeline-def]
-  (when (not (build-has-only-a-trigger (get new-state build-number)))
-    (if persist-the-output-of-running-steps
+(defn write-build-history [mongodb-uri mongodb-db mongodb-col persist-output-of-running-steps? build-number old-state new-state ttl pipeline-def]
+  (when (not (only-trigger? (get new-state build-number)))
+    (if persist-output-of-running-steps?
       (write-to-mongo-db mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def)
       (let [old-state-only-with-status (state-only-with-status (get old-state build-number))
             new-state-only-with-status (state-only-with-status (get new-state build-number))]

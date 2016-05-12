@@ -4,11 +4,11 @@
 
 (deftest test-build-has-only-a-trigger
   (testing "build with only a trigger"
-    (is (p/build-has-only-a-trigger {'(1) {:status :success}})))
+    (is (p/only-trigger? {'(1) {:status :success}})))
   (testing "build with only a trigger with nested steps"
-    (is (p/build-has-only-a-trigger {'(1) {:status :success} '(2 1) {:status :success} '(3 1) {:status :success :foo :bar}})))
+    (is (p/only-trigger? {'(1) {:status :success} '(2 1) {:status :success} '(3 1) {:status :success :foo :bar}})))
   (testing "build with two steps"
-    (is (not (p/build-has-only-a-trigger {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success :foo :bar}})))))
+    (is (not (p/only-trigger? {'(1) {:status :success} '(2 1) {:status :success} '(2) {:status :success :foo :bar}})))))
 
 (deftest test-step-id-lists->string
   (testing "should convert list keywords"
