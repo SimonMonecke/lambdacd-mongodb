@@ -15,5 +15,7 @@
                            [com.novemberain/monger "3.0.2"]
                            [com.rpl/specter "0.10.0"]]
             :test-paths ["test", "example"]
+            :uberjar-exclusions [#"logback.xml"]
+            :jar-exclusions [#"logback.xml"]
             :profiles {:uberjar {:aot :all}}
             :main example-pipeline.pipeline)
