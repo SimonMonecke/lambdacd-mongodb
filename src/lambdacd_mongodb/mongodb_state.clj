@@ -99,7 +99,8 @@
     (get @state-atom build-number))
 
   protocols/PipelineStructureSource
-  (get-pipeline-structure [self build-number] nil))
+  (get-pipeline-structure [self build-number]
+    (get @structure-atom build-number)))
 
 (defn init-mongodb [mc]
   (try

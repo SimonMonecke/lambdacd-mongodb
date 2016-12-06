@@ -136,4 +136,12 @@
              :some-step-result))))
   )
 
+(deftest test-mongoDBState-get-pipeline-structure
+  (testing "should return pipeline structure"
+    (let [state (s/map->MongoDBState {:state-atom (atom {42 :some-step-result
+                                                         20 :in-the-middle})
+                                      :structure-atom (atom {42 :cool-structure})})]
+      (is (= (protocols/get-pipeline-structure state 42)
+             :cool-structure))))
+  )
 
