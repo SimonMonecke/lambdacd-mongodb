@@ -49,45 +49,38 @@
   (testing "should call update-legacy twice"
     (let [v (atom {:update-legacy 0})]
       (with-redefs [s/update-legacy (fn [& params] (swap! v #(update % :update-legacy inc)))]
-
         (let [state (s/map->MongoDBState {})]
           (protocols/consume-step-result-update state nil nil nil)
           (old-protocol/update state nil nil nil)
           (is (verify v :update-legacy 2))
-          )
-
-        )))
+          ))))
 
   (testing "should call update-legacy with correct parameters"
     (let [v (atom {:update-legacy []})]
       (with-redefs [s/update-legacy (fn [& params] (swap! v #(assoc % :update-legacy params)))]
-
         (let [state (s/->MongoDBState :state-atom :structure-atom :persist-the-output-of-running-steps :uri :db :col :ttl :pip-def :readable)]
           (protocols/consume-step-result-update state :build-number :step-id :step-result)
           (is (verify v :update-legacy
                       [:persist-the-output-of-running-steps :build-number :step-id :step-result :uri :db :col :state-atom :ttl :pip-def]
-                      )))
-        ))))
+                      ))))))
+  )
 
 
 (deftest test-mongoDBState-nextBuildNumber
   (testing "should call next-build-number!"
     (let [v (atom {:next-build-number false})]
       (with-redefs [s/next-build-number! (fn [& params] (swap! v #(assoc % :next-build-number true)))]
-
         (let [state (s/map->MongoDBState {:use-readable-build-numbers? true})]
           (protocols/next-build-number state)
-          (is (verify v :next-build-number true)))
-        )))
+          (is (verify v :next-build-number true))))))
 
   (testing "should call get-timestamp"
     (let [v (atom {:get-timestamp false})]
       (with-redefs [s/get-timestamp (fn [] (swap! v #(assoc % :get-timestamp true)))]
-
         (let [state (s/map->MongoDBState {:use-readable-build-numbers? false})]
           (protocols/next-build-number state)
-          (is (verify v :get-timestamp true)))
-        ))))
+          (is (verify v :get-timestamp true))))))
+  )
 
 (deftest test-mongoDBState-consume-pipeline-structure
   (testing "should call persist-pipeline-structure"
@@ -98,8 +91,6 @@
           (is (verify v :persist-pipeline-structure-to-mongo
                       [state :build-number :pipeline-structure]))))))
 
-
-
   (testing "should write pipeline-structure to state for non-existing build-number"
     (let [state (s/map->MongoDBState {:state-atom (atom {}) :structure-atom (atom {1 {:otherBuild :structure}})})
           structure {:my :cool :pipeline "structure"}
@@ -109,19 +100,32 @@
         (is (= updated-state
                @(:structure-atom state))))))
 
-
-
   (testing "should write pipeline-structure to state for existing build-number"
-    (let [state (s/map->MongoDBState {:state-atom (atom {})
+    (let [state (s/map->MongoDBState {:state-atom     (atom {})
                                       :structure-atom (atom {42 {:some-inner-field "someInnerValue"}})})
           structure {:my :cool :pipeline "structure"}
-          updated-state {42 {:my :cool :pipeline "structure"}}
-          ]
+          updated-state {42 {:my :cool :pipeline "structure"}}]
       (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] nil)]
         (protocols/consume-pipeline-structure state 42 structure)
         (is (= updated-state
-               @(:structure-atom state))))
-      ))
+               @(:structure-atom state))))))
+  )
+
+(deftest test-mongoDBState-all-build-numbers
+  (testing "should return all sorted build-numbers"
+    (let [state (s/map->MongoDBState {:state-atom (atom {42 :some-build
+                                                         10 :some-other-build
+                                                         20 :in-the-middle})})
+          build-numbers (protocols/all-build-numbers state)]
+      (is (= build-numbers
+             [10 20 42]))))
+
+  (testing "should return empty list if no builds exist"
+    (let [state (s/map->MongoDBState {:state-atom (atom {})})
+          build-numbers (protocols/all-build-numbers state)]
+      (is (= build-numbers
+             []))))
+
   )
 
 

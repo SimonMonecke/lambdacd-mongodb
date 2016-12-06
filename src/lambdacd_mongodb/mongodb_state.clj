@@ -55,11 +55,15 @@
     (persistence-write/create-or-update-build {:db db :collection dbcollection} build-number {:pipeline-structure pipeline-structure-representation})))
 
 (defn update-pipeline-structure-in-memory [state-atom build-number structure]
-  (swap! state-atom #(assoc % build-number structure))
-  )
+  (swap! state-atom #(assoc % build-number structure)))
 
 (defn get-timestamp []
   (quot (System/currentTimeMillis) 1000))
+
+(defn get-sorted-build-numbers [state-atom]
+  (-> @state-atom
+      (keys)
+      (sort)))
 
 (defrecord MongoDBState [state-atom
                          structure-atom
@@ -79,20 +83,16 @@
     (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
   protocols/PipelineStructureConsumer
   (consume-pipeline-structure [self build-number pipeline-structure-representation]
-
     (update-pipeline-structure-in-memory structure-atom build-number pipeline-structure-representation)
     (persist-pipeline-structure-to-mongo self build-number pipeline-structure-representation))
-
-
   protocols/NextBuildNumberSource
   (next-build-number [self]
     (if use-readable-build-numbers?
       (next-build-number! self)
-      (get-timestamp))
-    )
+      (get-timestamp)))
   protocols/QueryAllBuildNumbersSource
   (all-build-numbers [self]
-    ())
+    (get-sorted-build-numbers state-atom))
   protocols/QueryStepResultsSource
   (get-step-results [self build-number] nil)
   protocols/PipelineStructureSource
@@ -107,7 +107,7 @@
                                                    (or (:max-builds mc) 20)
                                                    (or (:mark-running-steps-as mc) :killed)
                                                    (:pipeline-def mc)))
-          structure-atom (atom {} ) ; TODO -- read structure from mongo
+          structure-atom (atom {})                          ; TODO -- read structure from mongo
           ]
       (->MongoDBState state-atom
                       structure-atom
