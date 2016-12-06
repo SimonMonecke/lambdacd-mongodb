@@ -89,4 +89,15 @@
           (is (verify v :get-timestamp true)))
         ))))
 
+(deftest test-mongoDBState-consume-pipeline-structure
+  (testing "should call update-pipeline-structure"
+    (let [v (atom {:update-pipeline-structure []})]
+      (with-redefs [s/update-pipeline-structure (fn [& params] (swap! v #(assoc % :update-pipeline-structure params)))]
+
+        (let [state (s/map->MongoDBState {})]
+          (protocols/consume-pipeline-structure state :build-number :pipeline-structure)
+          (is (verify v :update-pipeline-structure
+                      [state :build-number :pipeline-structure])))
+        ))))
+
 

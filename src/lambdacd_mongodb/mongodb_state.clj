@@ -49,6 +49,12 @@
     (moncol/update-by-id db dbcollection :next-build-number {:value next} {:upsert true})
     next))
 
+(defn update-pipeline-structure [state build-number pipeline-structure-representation]
+  (let [db (:mongodb-db state)
+        dbcollection (:mongodb-col state)]
+    (persistence-write/create-or-update-build {:db db :collection dbcollection} build-number {:pipeline-structure pipeline-structure-representation})
+    ))
+
 (defn get-timestamp []
   (quot (System/currentTimeMillis) 1000))
 
@@ -68,7 +74,8 @@
   (consume-step-result-update [self build-number step-id step-result]
     (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
   protocols/PipelineStructureConsumer
-  (consume-pipeline-structure [self build-number pipeline-structure-representation] nil)
+  (consume-pipeline-structure [self build-number pipeline-structure-representation]
+    (update-pipeline-structure self build-number pipeline-structure-representation))
   protocols/NextBuildNumberSource
   (next-build-number [self]
     (if use-readable-build-numbers?

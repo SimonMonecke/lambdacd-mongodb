@@ -1,6 +1,13 @@
 (ns lambda-mongodb.test.mongodb-persistence-write
   (:require [clojure.test :refer :all]
-            [lambdacd-mongodb.mongodb-persistence-write :as p]))
+            [lambdacd-mongodb.mongodb-persistence-write :as p]
+            [monger.collection :as mc]
+            [monger.query :as mq]
+            )
+  (:use [monger.operators])
+  (:import [com.github.fakemongo.Fongo]
+           (com.github.fakemongo Fongo))
+  )
 
 (deftest test-build-has-only-a-trigger
   (testing "build with only a trigger"
@@ -95,3 +102,36 @@
   (testing "should just return any other type"
     (is (= 42
            (p/pre-process-values :key 42)))))
+
+
+
+(def fongo (atom nil))
+
+(defn db-clean-up-fixture [test]
+  (reset! fongo (Fongo. "test-fongo"))
+  (test)
+  (reset! fongo nil))
+
+(use-fixtures :each db-clean-up-fixture)
+
+(deftest test-create-or-update-non-existing-document
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"
+        mongo {:db db :collection collection}]
+
+    (testing "should create non-existing document"
+      (p/create-or-update-build mongo 42 {:some-field "someValue" :some-other-field "someOtherValue"})
+      (is (= (select-keys (mc/find-one-as-map db collection {:build-number 42}) [:build-number :some-field :some-other-field])
+             {:build-number 42 :some-field "someValue" :some-other-field "someOtherValue"})))))
+
+(deftest test-create-or-update-upsert-document
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"
+        mongo {:db db :collection collection}]
+
+    (testing "should update existing document"
+      (mc/insert db collection {:build-number 42 :some-field "someValue"})
+      (p/create-or-update-build mongo 42 {:some-field "someUpdatedValue" :some-other-field "someOtherValue"})
+      (is (= (select-keys (mc/find-one-as-map db collection {:build-number 42}) [:build-number :some-field :some-other-field])
+             {:build-number 42 :some-field "someUpdatedValue" :some-other-field "someOtherValue"})))))
+

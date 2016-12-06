@@ -3,10 +3,12 @@
   (:require [clojure.string :as str]
             [clojure.data.json :as json]
             [monger.collection :as mc]
+
             [clj-time.core :as t]
             monger.joda-time
             [clojure.tools.logging :as log])
-  (:use [com.rpl.specter]))
+  (:use [com.rpl.specter]
+        [monger.operators]))
 
 (def persistence-api-version 2)
 
@@ -85,3 +87,9 @@
             new-state-only-with-status (state-only-with-status (get new-state build-number))]
         (when (not= old-state-only-with-status new-state-only-with-status)
           (write-to-mongo-db mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def))))))
+
+(defn create-or-update-build [{db :db coll :collection} build-number build-data-map]
+  (mc/update db coll {:build-number build-number} {$set build-data-map} {:upsert true})
+  (try
+    (catch MongoException e
+      (log/error e (str "LambdaCD-MongoDB: Write to DB: Cannot update structure for build number " build-number)))))

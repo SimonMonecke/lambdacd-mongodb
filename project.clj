@@ -17,5 +17,6 @@
             :test-paths ["test", "example"]
             :uberjar-exclusions [#"logback.xml"]
             :jar-exclusions [#"logback.xml"]
-            :profiles {:uberjar {:aot :all}}
+            :profiles {:uberjar {:aot :all}
+                       :test {:dependencies [[com.github.fakemongo/fongo "2.0.10"]]}}
             :main example-pipeline.pipeline)
