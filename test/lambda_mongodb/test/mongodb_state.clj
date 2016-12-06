@@ -62,7 +62,7 @@
     (let [v (atom {:update-legacy []})]
       (with-redefs [s/update-legacy (fn [& params] (swap! v #(assoc % :update-legacy params)))]
 
-        (let [state (s/->MongoDBState :state-atom :persist-the-output-of-running-steps :uri :db :col :ttl :pip-def :readable)]
+        (let [state (s/->MongoDBState :state-atom :structure-atom :persist-the-output-of-running-steps :uri :db :col :ttl :pip-def :readable)]
           (protocols/consume-step-result-update state :build-number :step-id :step-result)
           (is (verify v :update-legacy
                       [:persist-the-output-of-running-steps :build-number :step-id :step-result :uri :db :col :state-atom :ttl :pip-def]
@@ -93,29 +93,34 @@
   (testing "should call persist-pipeline-structure"
     (let [v (atom {:persist-pipeline-structure-to-mongo []})]
       (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] (swap! v #(assoc % :persist-pipeline-structure-to-mongo params)))]
-        (let [state (s/map->MongoDBState {:state-atom (atom {})})]
+        (let [state (s/map->MongoDBState {:state-atom (atom {}) :structure-atom (atom {})})]
           (protocols/consume-pipeline-structure state :build-number :pipeline-structure)
           (is (verify v :persist-pipeline-structure-to-mongo
-                      [state :build-number :pipeline-structure])))
-        )))
+                      [state :build-number :pipeline-structure]))))))
+
+
+
   (testing "should write pipeline-structure to state for non-existing build-number"
-    (let [state (s/map->MongoDBState {:state-atom (atom {:some-field "someValue"})})
+    (let [state (s/map->MongoDBState {:state-atom (atom {}) :structure-atom (atom {1 {:otherBuild :structure}})})
           structure {:my :cool :pipeline "structure"}
-          updated-state {:some-field "someValue" 42 {:pipeline-structure {:my :cool :pipeline "structure"}}}]
-      (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] nil)]
+          updated-state {1 {:otherBuild :structure} 42 {:my :cool :pipeline "structure"}}]
+      (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& _] nil)]
         (protocols/consume-pipeline-structure state 42 structure)
         (is (= updated-state
-               @(:state-atom state))))
-      ))
+               @(:structure-atom state))))))
+
+
+
   (testing "should write pipeline-structure to state for existing build-number"
-    (let [state (s/map->MongoDBState {:state-atom (atom {42 {:some-inner-field "someInnerValue" :pipeline-structure :some-old-structure}})})
+    (let [state (s/map->MongoDBState {:state-atom (atom {})
+                                      :structure-atom (atom {42 {:some-inner-field "someInnerValue"}})})
           structure {:my :cool :pipeline "structure"}
-          updated-state {42 {:pipeline-structure {:my :cool :pipeline "structure"} :some-inner-field "someInnerValue"}}
+          updated-state {42 {:my :cool :pipeline "structure"}}
           ]
       (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] nil)]
         (protocols/consume-pipeline-structure state 42 structure)
         (is (= updated-state
-               @(:state-atom state))))
+               @(:structure-atom state))))
       ))
   )
 

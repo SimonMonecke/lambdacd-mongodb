@@ -49,19 +49,20 @@
     (moncol/update-by-id db dbcollection :next-build-number {:value next} {:upsert true})
     next))
 
-(defn persist-pipeline-structure-to-mongo [state build-number pipeline-structure-representation]
-  (let [db (:mongodb-db state)
-        dbcollection (:mongodb-col state)]
+(defn persist-pipeline-structure-to-mongo [mongo-state-component build-number pipeline-structure-representation]
+  (let [db (:mongodb-db mongo-state-component)
+        dbcollection (:mongodb-col mongo-state-component)]
     (persistence-write/create-or-update-build {:db db :collection dbcollection} build-number {:pipeline-structure pipeline-structure-representation})))
 
 (defn update-pipeline-structure-in-memory [state-atom build-number structure]
-  (swap! state-atom #(assoc-in % [build-number :pipeline-structure] structure))
+  (swap! state-atom #(assoc % build-number structure))
   )
 
 (defn get-timestamp []
   (quot (System/currentTimeMillis) 1000))
 
 (defrecord MongoDBState [state-atom
+                         structure-atom
                          persist-the-output-of-running-steps
                          mongodb-uri mongodb-db mongodb-col ttl
                          pipeline-def use-readable-build-numbers?]
@@ -78,8 +79,11 @@
     (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
   protocols/PipelineStructureConsumer
   (consume-pipeline-structure [self build-number pipeline-structure-representation]
-    (update-pipeline-structure-in-memory state-atom build-number pipeline-structure-representation)
+
+    (update-pipeline-structure-in-memory structure-atom build-number pipeline-structure-representation)
     (persist-pipeline-structure-to-mongo self build-number pipeline-structure-representation))
+
+
   protocols/NextBuildNumberSource
   (next-build-number [self]
     (if use-readable-build-numbers?
@@ -102,8 +106,11 @@
                                                    (:col mc)
                                                    (or (:max-builds mc) 20)
                                                    (or (:mark-running-steps-as mc) :killed)
-                                                   (:pipeline-def mc)))]
+                                                   (:pipeline-def mc)))
+          structure-atom (atom {} ) ; TODO -- read structure from mongo
+          ]
       (->MongoDBState state-atom
+                      structure-atom
                       (= true (:persist-the-output-of-running-steps mc))
                       (:uri mc)
                       db
