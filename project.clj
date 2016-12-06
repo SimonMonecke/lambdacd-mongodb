@@ -1,11 +1,11 @@
-(defproject lambdacd-mongodb "1.1.2"
+(defproject lambdacd-mongodb "2.0.0-SNAPSHOT"
             :description "LambdaCD extension which lets you use a MongoDB to persist the state of pipelines"
             :url "https://github.com/SimonMonecke/lambdacd-mongodb"
             :license {:name "The MIT License (MIT)"
                       :url "http://opensource.org/licenses/MIT"}
             :scm {:name "git"
                   :url "https://github.com/SimonMonecke/lambdacd-mongodb.git"}
-            :dependencies [[lambdacd "0.9.0"]
+            :dependencies [[lambdacd "0.11.0"]
                            [ring-server "0.4.0"]
                            [org.clojure/clojure "1.8.0"]
                            [org.clojure/tools.logging "0.3.1"]

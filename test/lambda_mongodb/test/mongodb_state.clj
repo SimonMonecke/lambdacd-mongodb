@@ -1,7 +1,10 @@
 (ns lambda-mongodb.test.mongodb-state
   (:require [clojure.test :refer :all]
             [clojure.tools.logging :as log]
-            [lambdacd-mongodb.mongodb-state :as s]))
+            [lambdacd-mongodb.mongodb-state :as s]
+            [lambdacd.state.protocols :as protocols]
+            [lambdacd.internal.pipeline-state :as old-protocol]
+            ))
 
 (def config-without-uri
   {:db           "db"
@@ -36,3 +39,29 @@
     (testing "that it only needs one host"
       (is (= "mongodb://user:password@localhost:27017/db"
              (:uri (s/get-mongodb-cfg {:mongodb-cfg (assoc config-with-uri-parts :hosts ["localhost"])})))))))
+
+
+(deftest test-MongoDBState
+  (testing "should call update-legacy twice"
+    (let [verify (atom {:update-legacy 0})]
+      (with-redefs [s/update-legacy (fn [& params] (swap! verify #(update % :update-legacy inc)))]
+
+        (let [state (s/map->MongoDBState {})]
+          (protocols/consume-step-result-update state nil nil nil)
+          (old-protocol/update state nil nil nil)
+          (is (= 2 (:update-legacy @verify))))
+
+        )))
+
+  (testing "should call update-legacy with correct parameters"
+    (let [verify (atom {:update-legacy []})]
+      (with-redefs [s/update-legacy (fn [& params] (swap! verify #(assoc % :update-legacy params)))]
+
+        (let [state (s/->MongoDBState :state-atom :persist-the-output-of-running-steps :uri :db :col :ttl :pip-def :readable)]
+          (protocols/consume-step-result-update state :build-number :step-id :step-result)
+          (is (=
+                [:persist-the-output-of-running-steps :build-number :step-id :step-result :uri :db :col :state-atom :ttl :pip-def]
+                (:update-legacy @verify))))
+        )))
+  )
+

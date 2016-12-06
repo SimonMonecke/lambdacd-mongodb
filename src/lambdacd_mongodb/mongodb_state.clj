@@ -6,7 +6,8 @@
             [lambdacd.internal.pipeline-state :as pipeline-state-protocol]
             [monger.core :as mg]
             [monger.collection :as moncol]
-            [clojure.tools.logging :as log]))
+            [clojure.tools.logging :as log]
+            [lambdacd.state.protocols :as protocols]))
 
 (defn initial-pipeline-state [mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
   (when (< max-builds 1)
@@ -35,6 +36,7 @@
   (if (not (nil? state))
     (let [old-state @state
           new-state (swap! state (partial update-pipeline-state build-number step-id step-result))]
+
       (persistence-write/write-build-history mongodb-uri mongodb-db mongodb-col persist-the-output-of-running-steps build-number old-state new-state ttl pipeline-def))))
 
 (defn next-build-number! [this]
@@ -47,10 +49,13 @@
     (moncol/update-by-id db dbcollection :next-build-number {:value next} {:upsert true})
     next))
 
-(defrecord MongoDBState [state-atom persist-the-output-of-running-steps mongodb-uri mongodb-db mongodb-col ttl pipeline-def use-readable-build-numbers?]
+(defrecord MongoDBState [state-atom
+                         persist-the-output-of-running-steps
+                         mongodb-uri mongodb-db mongodb-col ttl
+                         pipeline-def use-readable-build-numbers?]
   pipeline-state-protocol/PipelineStateComponent
   (update [self build-number step-id step-result]
-    (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
+    (protocols/consume-step-result-update self build-number step-id step-result))
   (get-all [self]
     @state-atom)
   (get-internal-state [self]
@@ -59,7 +64,24 @@
     (if use-readable-build-numbers?
       (next-build-number! self)
       (quot (System/currentTimeMillis) 1000))
-    ))
+    )
+
+
+  protocols/StepResultUpdateConsumer
+  (consume-step-result-update [self build-number step-id step-result]
+    (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
+  protocols/PipelineStructureConsumer
+  (consume-pipeline-structure [self build-number pipeline-structure-representation] nil)
+  protocols/NextBuildNumberSource
+  ;(next-build-number [self] nil)
+  protocols/QueryAllBuildNumbersSource
+  (all-build-numbers [self] nil)
+  protocols/QueryStepResultsSource
+  (get-step-results [self build-number] nil)
+  protocols/PipelineStructureSource
+  (get-pipeline-structure [self build-number] nil)
+
+  )
 
 (defn init-mongodb [mc]
   (try
