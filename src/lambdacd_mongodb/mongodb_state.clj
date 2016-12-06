@@ -93,8 +93,11 @@
   protocols/QueryAllBuildNumbersSource
   (all-build-numbers [self]
     (get-sorted-build-numbers state-atom))
+
   protocols/QueryStepResultsSource
-  (get-step-results [self build-number] nil)
+  (get-step-results [self build-number]
+    (get @state-atom build-number))
+
   protocols/PipelineStructureSource
   (get-pipeline-structure [self build-number] nil))
 

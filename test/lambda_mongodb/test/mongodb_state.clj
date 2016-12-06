@@ -125,8 +125,15 @@
           build-numbers (protocols/all-build-numbers state)]
       (is (= build-numbers
              []))))
-
   )
 
+(deftest test-mongoDBState-get-step-results
+  (testing "should return step results"
+    (let [state (s/map->MongoDBState {:state-atom (atom {42 :some-step-result
+                                                         10 :some-other-build
+                                                         20 :in-the-middle})})]
+      (is (= (protocols/get-step-results state 42)
+             :some-step-result))))
+  )
 
 
