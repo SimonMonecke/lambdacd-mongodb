@@ -4,6 +4,7 @@
             [lambdacd-mongodb.mongodb-state :as s]
             [lambdacd.state.protocols :as protocols]
             [lambdacd.internal.pipeline-state :as old-protocol]
+
             ))
 
 (def config-without-uri
@@ -41,27 +42,51 @@
              (:uri (s/get-mongodb-cfg {:mongodb-cfg (assoc config-with-uri-parts :hosts ["localhost"])})))))))
 
 
-(deftest test-MongoDBState
+(defn verify [verify-atom key expectedValue]
+  (= (get @verify-atom key) expectedValue))
+
+(deftest test-MongoDBState-consume-update
   (testing "should call update-legacy twice"
-    (let [verify (atom {:update-legacy 0})]
-      (with-redefs [s/update-legacy (fn [& params] (swap! verify #(update % :update-legacy inc)))]
+    (let [v (atom {:update-legacy 0})]
+      (with-redefs [s/update-legacy (fn [& params] (swap! v #(update % :update-legacy inc)))]
 
         (let [state (s/map->MongoDBState {})]
           (protocols/consume-step-result-update state nil nil nil)
           (old-protocol/update state nil nil nil)
-          (is (= 2 (:update-legacy @verify))))
+          (is (verify v :update-legacy 2))
+          )
 
         )))
 
   (testing "should call update-legacy with correct parameters"
-    (let [verify (atom {:update-legacy []})]
-      (with-redefs [s/update-legacy (fn [& params] (swap! verify #(assoc % :update-legacy params)))]
+    (let [v (atom {:update-legacy []})]
+      (with-redefs [s/update-legacy (fn [& params] (swap! v #(assoc % :update-legacy params)))]
 
         (let [state (s/->MongoDBState :state-atom :persist-the-output-of-running-steps :uri :db :col :ttl :pip-def :readable)]
           (protocols/consume-step-result-update state :build-number :step-id :step-result)
-          (is (=
-                [:persist-the-output-of-running-steps :build-number :step-id :step-result :uri :db :col :state-atom :ttl :pip-def]
-                (:update-legacy @verify))))
+          (is (verify v :update-legacy
+                      [:persist-the-output-of-running-steps :build-number :step-id :step-result :uri :db :col :state-atom :ttl :pip-def]
+                      )))
+        ))))
+
+
+(deftest test-mongoDBState-nextBuildNumber
+  (testing "should call next-build-number!"
+    (let [v (atom {:next-build-number false})]
+      (with-redefs [s/next-build-number! (fn [& params] (swap! v #(assoc % :next-build-number true)))]
+
+        (let [state (s/map->MongoDBState {:use-readable-build-numbers? true})]
+          (protocols/next-build-number state)
+          (is (verify v :next-build-number true)))
         )))
-  )
+
+  (testing "should call get-timestamp"
+    (let [v (atom {:get-timestamp false})]
+      (with-redefs [s/get-timestamp (fn [] (swap! v #(assoc % :get-timestamp true)))]
+
+        (let [state (s/map->MongoDBState {:use-readable-build-numbers? false})]
+          (protocols/next-build-number state)
+          (is (verify v :get-timestamp true)))
+        ))))
+
 

@@ -49,6 +49,9 @@
     (moncol/update-by-id db dbcollection :next-build-number {:value next} {:upsert true})
     next))
 
+(defn get-timestamp []
+  (quot (System/currentTimeMillis) 1000))
+
 (defrecord MongoDBState [state-atom
                          persist-the-output-of-running-steps
                          mongodb-uri mongodb-db mongodb-col ttl
@@ -60,12 +63,6 @@
     @state-atom)
   (get-internal-state [self]
     state-atom)
-  (next-build-number [self]
-    (if use-readable-build-numbers?
-      (next-build-number! self)
-      (quot (System/currentTimeMillis) 1000))
-    )
-
 
   protocols/StepResultUpdateConsumer
   (consume-step-result-update [self build-number step-id step-result]
@@ -73,7 +70,11 @@
   protocols/PipelineStructureConsumer
   (consume-pipeline-structure [self build-number pipeline-structure-representation] nil)
   protocols/NextBuildNumberSource
-  ;(next-build-number [self] nil)
+  (next-build-number [self]
+    (if use-readable-build-numbers?
+      (next-build-number! self)
+      (get-timestamp))
+    )
   protocols/QueryAllBuildNumbersSource
   (all-build-numbers [self] nil)
   protocols/QueryStepResultsSource
