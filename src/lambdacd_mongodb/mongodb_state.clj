@@ -49,11 +49,14 @@
     (moncol/update-by-id db dbcollection :next-build-number {:value next} {:upsert true})
     next))
 
-(defn update-pipeline-structure [state build-number pipeline-structure-representation]
+(defn persist-pipeline-structure-to-mongo [state build-number pipeline-structure-representation]
   (let [db (:mongodb-db state)
         dbcollection (:mongodb-col state)]
-    (persistence-write/create-or-update-build {:db db :collection dbcollection} build-number {:pipeline-structure pipeline-structure-representation})
-    ))
+    (persistence-write/create-or-update-build {:db db :collection dbcollection} build-number {:pipeline-structure pipeline-structure-representation})))
+
+(defn update-pipeline-structure-in-memory [state-atom build-number structure]
+  (swap! state-atom #(assoc-in % [build-number :pipeline-structure] structure))
+  )
 
 (defn get-timestamp []
   (quot (System/currentTimeMillis) 1000))
@@ -75,7 +78,8 @@
     (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
   protocols/PipelineStructureConsumer
   (consume-pipeline-structure [self build-number pipeline-structure-representation]
-    (update-pipeline-structure self build-number pipeline-structure-representation))
+    (update-pipeline-structure-in-memory state-atom build-number pipeline-structure-representation)
+    (persist-pipeline-structure-to-mongo self build-number pipeline-structure-representation))
   protocols/NextBuildNumberSource
   (next-build-number [self]
     (if use-readable-build-numbers?
@@ -83,13 +87,12 @@
       (get-timestamp))
     )
   protocols/QueryAllBuildNumbersSource
-  (all-build-numbers [self] nil)
+  (all-build-numbers [self]
+    ())
   protocols/QueryStepResultsSource
   (get-step-results [self build-number] nil)
   protocols/PipelineStructureSource
-  (get-pipeline-structure [self build-number] nil)
-
-  )
+  (get-pipeline-structure [self build-number] nil))
 
 (defn init-mongodb [mc]
   (try

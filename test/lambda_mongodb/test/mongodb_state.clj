@@ -90,14 +90,34 @@
         ))))
 
 (deftest test-mongoDBState-consume-pipeline-structure
-  (testing "should call update-pipeline-structure"
-    (let [v (atom {:update-pipeline-structure []})]
-      (with-redefs [s/update-pipeline-structure (fn [& params] (swap! v #(assoc % :update-pipeline-structure params)))]
-
-        (let [state (s/map->MongoDBState {})]
+  (testing "should call persist-pipeline-structure"
+    (let [v (atom {:persist-pipeline-structure-to-mongo []})]
+      (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] (swap! v #(assoc % :persist-pipeline-structure-to-mongo params)))]
+        (let [state (s/map->MongoDBState {:state-atom (atom {})})]
           (protocols/consume-pipeline-structure state :build-number :pipeline-structure)
-          (is (verify v :update-pipeline-structure
+          (is (verify v :persist-pipeline-structure-to-mongo
                       [state :build-number :pipeline-structure])))
-        ))))
+        )))
+  (testing "should write pipeline-structure to state for non-existing build-number"
+    (let [state (s/map->MongoDBState {:state-atom (atom {:some-field "someValue"})})
+          structure {:my :cool :pipeline "structure"}
+          updated-state {:some-field "someValue" 42 {:pipeline-structure {:my :cool :pipeline "structure"}}}]
+      (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] nil)]
+        (protocols/consume-pipeline-structure state 42 structure)
+        (is (= updated-state
+               @(:state-atom state))))
+      ))
+  (testing "should write pipeline-structure to state for existing build-number"
+    (let [state (s/map->MongoDBState {:state-atom (atom {42 {:some-inner-field "someInnerValue" :pipeline-structure :some-old-structure}})})
+          structure {:my :cool :pipeline "structure"}
+          updated-state {42 {:pipeline-structure {:my :cool :pipeline "structure"} :some-inner-field "someInnerValue"}}
+          ]
+      (with-redefs [s/persist-pipeline-structure-to-mongo (fn [& params] nil)]
+        (protocols/consume-pipeline-structure state 42 structure)
+        (is (= updated-state
+               @(:state-atom state))))
+      ))
+  )
+
 
 
