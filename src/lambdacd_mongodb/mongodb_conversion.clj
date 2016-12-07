@@ -1,5 +1,6 @@
 (ns lambdacd-mongodb.mongodb-conversion
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [monger.conversion :as mcon]))
 
 (defn deep-transform-map [input key-fn value-fn]
   (cond
@@ -7,18 +8,25 @@
     (sequential? input) (clojure.walk/walk (fn [value] (deep-transform-map value key-fn value-fn)) identity input)
     :else (value-fn input)))
 
-(defn string->key [key]
-  (if (and (string? key) (.startsWith key ":"))
-    (keyword (.substring key 1))
-    key))
+(defn string->keyword [s]
+  (if (and (string? s) (.startsWith s ":"))
+    (keyword (.substring s 1))
+    s))
 
-(defn key->string [key]
-  (if (keyword? key)
-    (str key)
-    key))
+(defn keyword->string [k]
+  (if (keyword? k)
+    (str k)
+    k))
 
-(defn map->dbobj [m])
-(defn dbojb->map [dbobj])
+(defn map->dbobj [m]
+  (as-> m $
+        (deep-transform-map $ keyword->string keyword->string)
+        (mcon/to-db-object $)))
+
+(defn dbojb->map [dbobj]
+  (as-> dbobj $
+        (mcon/from-db-object $ false)
+        (deep-transform-map $ string->keyword string->keyword)))
 
 (defn step-id-seq->string [step-id]
   (if (sequential? step-id)
