@@ -3,10 +3,10 @@
   (:require [clojure.string :as str]
             [clojure.data.json :as json]
             [monger.collection :as mc]
-
             [clj-time.core :as t]
-            monger.joda-time
-            [clojure.tools.logging :as log])
+            [monger.joda-time]
+            [clojure.tools.logging :as log]
+            [clojure.walk :refer [walk]])
   (:use [com.rpl.specter]
         [monger.operators]))
 
@@ -54,6 +54,15 @@
     (str v)
     v))
 
+(defn deep-transform-map [input key-fn value-fn]
+  (cond
+    (map? input) (clojure.walk/walk (fn [[key value]] [(key-fn key) (deep-transform-map value key-fn value-fn)]) identity input)
+    (sequential? input) (clojure.walk/walk (fn [value] (deep-transform-map value key-fn value-fn)) identity input)
+    :else (value-fn input)
+    )
+
+  )
+
 (defn enrich-pipeline-state [pipeline-state build-number pipeline-def]
   (->> pipeline-state
        ((partial get-current-build build-number))
@@ -65,6 +74,18 @@
        ((fn [m] (json/write-str m :key-fn str :value-fn pre-process-values)))
        (json/read-str)
        (add-created-at-to-map)))
+
+;(defn assoc-metadata [build-data build-number]
+;  ; [build-map]
+;  ; { (1) {...}
+;  ;   (1 2) {...} }
+;  ; 1. step-id->string
+;  ; 2. enclose steps into dbmap == {:steps {...} }
+;  (as-> build-data $
+;        (assoc $ :build-number build-number)
+;        (assoc $ :created-at (t/now))
+;        (assoc $ :api-version persistence-api-version)
+;        ))
 
 (defn write-to-mongo-db [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
   (let [enriched-state (enrich-pipeline-state new-state build-number pipeline-def)]
@@ -89,7 +110,8 @@
           (write-to-mongo-db mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def))))))
 
 (defn create-or-update-build [{db :db coll :collection} build-number build-data-map]
-  (mc/update db coll {:build-number build-number} {$set build-data-map} {:upsert true})
-  (try
-    (catch MongoException e
-      (log/error e (str "LambdaCD-MongoDB: Write to DB: Cannot update structure for build number " build-number)))))
+  (let []
+    (mc/update db coll {":build-number" build-number} {$set build-data-map} {:upsert true})
+    (try
+      (catch MongoException e
+        (log/error e (str "LambdaCD-MongoDB: Write to DB: Cannot update structure for build number " build-number))))))

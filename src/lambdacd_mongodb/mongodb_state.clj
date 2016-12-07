@@ -73,13 +73,13 @@
   pipeline-state-protocol/PipelineStateComponent
   (update [self build-number step-id step-result]
     (protocols/consume-step-result-update self build-number step-id step-result))
-  (get-all [self]
+  (get-all [_]
     @state-atom)
-  (get-internal-state [self]
+  (get-internal-state [_]
     state-atom)
 
   protocols/StepResultUpdateConsumer
-  (consume-step-result-update [self build-number step-id step-result]
+  (consume-step-result-update [_ build-number step-id step-result]
     (update-legacy persist-the-output-of-running-steps build-number step-id step-result mongodb-uri mongodb-db mongodb-col state-atom ttl pipeline-def))
   protocols/PipelineStructureConsumer
   (consume-pipeline-structure [self build-number pipeline-structure-representation]
@@ -91,15 +91,15 @@
       (next-build-number! self)
       (get-timestamp)))
   protocols/QueryAllBuildNumbersSource
-  (all-build-numbers [self]
+  (all-build-numbers [_]
     (get-sorted-build-numbers state-atom))
 
   protocols/QueryStepResultsSource
-  (get-step-results [self build-number]
+  (get-step-results [_ build-number]
     (get @state-atom build-number))
 
   protocols/PipelineStructureSource
-  (get-pipeline-structure [self build-number]
+  (get-pipeline-structure [_ build-number]
     (get @structure-atom build-number)))
 
 (defn init-mongodb [mc]
