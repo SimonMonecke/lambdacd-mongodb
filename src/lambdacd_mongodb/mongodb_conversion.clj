@@ -20,6 +20,8 @@
 (defn map->dbobj [m])
 (defn dbojb->map [dbobj])
 
-(defn- step-id->string [step-id]
-  (str/join "-" step-id))
+(defn step-id-seq->string [step-id]
+  (if (sequential? step-id)
+    (str/join "-" step-id)
+    step-id))
 
