@@ -1,4 +1,4 @@
-# lambdacd-mongodb
+# lambdacd-mongodb [![Build Status](https://travis-ci.org/SimonMonecke/lambdacd-mongodb.svg?branch=master)](https://travis-ci.org/SimonMonecke/lambdacd-mongodb)
 
 [![Clojars Project](http://clojars.org/lambdacd-mongodb/latest-version.svg)](http://clojars.org/lambdacd-mongodb)
 
