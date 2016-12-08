@@ -91,7 +91,7 @@
 (defn write-to-mongo-db [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
   (let [enriched-state (enrich-pipeline-state new-state build-number pipeline-def)]
     (try
-      (mc/update mongodb-db mongodb-col {":build-number" build-number} enriched-state {:upsert true})
+      (mc/update mongodb-db mongodb-col {":build-number" build-number} {$set enriched-state} {:upsert true})
       (mc/ensure-index mongodb-db mongodb-col (array-map ":created-at" 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
       (mc/ensure-index mongodb-db mongodb-col (array-map ":build-number" 1))
       (catch MongoException e

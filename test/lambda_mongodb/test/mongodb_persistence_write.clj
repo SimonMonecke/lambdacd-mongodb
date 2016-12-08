@@ -2,6 +2,7 @@
   (:require [clojure.test :refer :all]
             [lambdacd-mongodb.mongodb-persistence-write :as p]
             [monger.collection :as mc]
+            [monger.conversion :as mconv]
             [lambdacd-mongodb.mongodb-conversion :as conversion])
   (:use [monger.operators])
   (:import [com.github.fakemongo.Fongo]
@@ -134,3 +135,50 @@
         (is (= (select-keys result [:build-number :some-field :some-other-field "someStringKey"])
                {:build-number 42 :some-field "someUpdatedValue" :some-other-field "someOtherValue" "someStringKey" :someKeywordValue}))))))
 
+(defn time->iso-formatted-string [t]
+  (clj-time.format/unparse (clj-time.format/formatters :basic-date-time) t))
+
+(deftest test-write-to-mongo-db
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"
+        mongo {:db db :collection collection}
+        some-state {41 {[1] {:status :running}}
+                    42 {[1]   {:status :success :out "hallo"}
+                        [1 1] {:status :waiting :out "hey"}
+                        [2]   {:status :failure :out "hey"}}
+                    43 {[1] {:status :success}}}]
+
+    (testing "should update non-existing document"
+      (let [now (clj-time.core/now)]
+        (with-redefs [clj-time.core/now (fn [] now)
+                      clojure.core/hash (fn [_] 12345)]
+          (p/write-to-mongo-db "someMongoUri" db collection 42 some-state 7 "somePipelineDefinition")
+          (let [result (mconv/from-db-object (mc/find-one db collection {":build-number" 42}) false)]
+            (is (= {":api-version"  2
+                    ":build-number" 42
+                    ":hash"         12345
+                    ":steps"        {"1"   {":out"    "hallo"
+                                            ":status" ":success"}
+                                     "1-1" {":out"    "hey"
+                                            ":status" ":waiting"}
+                                     "2"   {":out"    "hey"
+                                            ":status" ":failure"}}}
+                   (select-keys result [":build-number" ":api-version" ":hash" ":steps"])))
+            (is (= (time->iso-formatted-string now)
+                   (time->iso-formatted-string (get result ":created-at"))))))))
+
+    (testing "should update existing document"
+      (let [now (clj-time.core/now)]
+        (with-redefs [clj-time.core/now (fn [] now)
+                      clojure.core/hash (fn [_] 12345)]
+          (mc/insert db collection {":build-number" 41 ":someKey" ":someValue"})
+          (p/write-to-mongo-db "someMongoUri" db collection 41 some-state 7 "somePipelineDefinition")
+          (let [result (mconv/from-db-object (mc/find-one db collection {":build-number" 41}) false)]
+            (is (= {":someKey"      ":someValue"
+                    ":api-version"  2
+                    ":build-number" 41
+                    ":hash"         12345
+                    ":steps"        {"1" {":status" ":running"}}}
+                   (select-keys result [":build-number" ":api-version" ":hash" ":steps" ":someKey"])))
+            (is (= (time->iso-formatted-string now)
+                   (time->iso-formatted-string (get result ":created-at"))))))))))
