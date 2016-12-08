@@ -11,7 +11,7 @@
   (:use [com.rpl.specter]
         [monger.operators]))
 
-(def persistence-api-version 2)
+(def persistence-api-version 3)
 
 (defn- formatted-step-id [step-id]
   (str/join "-" step-id))
@@ -69,7 +69,6 @@
        ((partial get-current-build build-number))
        ((partial reduce step-id-lists->string {}))
        (wrap-in-map)
-       ((partial add-hash-to-map pipeline-def))
        ((partial add-build-number-to-map build-number))
        (add-api-version-to-map)
        ((fn [m] (json/write-str m :key-fn str :value-fn pre-process-values)))

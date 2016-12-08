@@ -6,8 +6,9 @@
             [monger.collection :as mc]
             [lambdacd-mongodb.mongodb-persistence-write :refer [persistence-api-version]]
             )
-  (:import (com.github.fakemongo Fongo))
-  )
+  (:import (com.github.fakemongo Fongo)))
+
+(def api-version persistence-api-version)
 
 (deftest test-clean-states
   (testing "don't change success steps"
@@ -167,8 +168,43 @@
         find-builds #'p/find-builds]
 
     (testing "should only find builds with the same api version in descending build-number order"
-      (mc/insert db collection {":build-number" 1 ":hash" "wrongHash" ":api-version" persistence-api-version})
-      (mc/insert db collection {":build-number" 2 ":api-version" persistence-api-version})
+      (mc/insert db collection {":build-number" 1 ":hash" "wrongHash" ":api-version" api-version})
+      (mc/insert db collection {":build-number" 2 ":api-version" api-version})
 
       (let [result (find-builds db collection 10)]
         (is (= [{":build-number" 2} {":build-number" 1}] (map #(select-keys %1 [":build-number"]) result)))))))
+
+(def MAX_BUILDS 10)
+
+(deftest test-read-pipeline-structures-from
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"]
+    (testing "should read all pipeline-structures from db"
+      (let [add-api #(assoc % ":api-version" api-version)
+            add-noise #(assoc % ":steps" [{"1" {:a :b}}])
+            mongo-entry #(-> % add-api add-noise)
+            b1 (mongo-entry {":build-number"       1
+                             ":pipeline-structure" {":hans" ":wurst"}})
+            b2 (mongo-entry {":build-number" 2})
+            b3 (mongo-entry {":pipeline-structure" "super sache"})
+            b4 (mongo-entry {":build-number" 4 ":pipeline-structure" "cooles ding!"})
+            ]
+        (doseq [x [b1 b2 b3 b4]]
+          (mc/insert db collection x))
+        (let [result (p/read-pipeline-structures-from db collection MAX_BUILDS)]
+          (is (= {4 "cooles ding!"
+                  1 {:hans :wurst}} result)))))
+
+    (testing "should respect max builds parameter"
+      (let [add-api #(assoc % ":api-version" api-version)
+            add-noise #(assoc % ":steps" [{"1" {:a :b}}])
+            mongo-entry #(-> % add-api add-noise)
+            b1 (mongo-entry {":build-number"       1
+                             ":pipeline-structure" {":hans" ":wurst"}})
+            b2 (mongo-entry {":build-number" 4 ":pipeline-structure" "cooles ding!"})
+            ]
+        (doseq [x [b1 b2]]
+          (mc/insert db collection x))
+        (let [result (p/read-pipeline-structures-from db collection 1)]
+          (is (= {4 "cooles ding!"} result)))))
+    ))

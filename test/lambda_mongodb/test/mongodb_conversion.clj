@@ -28,20 +28,21 @@
     (is (= "1-3-hallo-4" (testee/step-id-seq->string '(1 3 "hallo" 4))))))
 
 (deftest test-deep-transform-map
-  (testing "should return empty for empty map"
-    (is (= {} (testee/deep-transform-map {} identity identity))))
-  (testing "should return identity"
-    (is (= {:key :value :key2 {:key3 :value2}}
-           (testee/deep-transform-map {:key :value :key2 {:key3 :value2}} identity identity))))
-  (testing "should transform values to false"
-    (is (= {:key false :key2 {:key3 false}}
-           (testee/deep-transform-map {:key :value :key2 {:key3 :value2}} identity (constantly false)))))
-  (testing "should transform keys to string"
-    (is (= {":key" :value ":key2" {":key3" :value2}}
-           (testee/deep-transform-map {:key :value :key2 {:key3 :value2}} str identity))))
-  (testing "should transform values to false"
-    (is (= {:key false :key2 [false false]}
-           (testee/deep-transform-map {:key false :key2 [1 2]} identity (constantly false))))))
+  (let [deep-transform-map #'testee/deep-transform-map]
+    (testing "should return empty for empty map"
+      (is (= {} (deep-transform-map {} identity identity))))
+    (testing "should return identity"
+      (is (= {:key :value :key2 {:key3 :value2}}
+             (deep-transform-map {:key :value :key2 {:key3 :value2}} identity identity))))
+    (testing "should transform values to false"
+      (is (= {:key false :key2 {:key3 false}}
+             (deep-transform-map {:key :value :key2 {:key3 :value2}} identity (constantly false)))))
+    (testing "should transform keys to string"
+      (is (= {":key" :value ":key2" {":key3" :value2}}
+             (deep-transform-map {:key :value :key2 {:key3 :value2}} str identity))))
+    (testing "should transform values to false"
+      (is (= {:key false :key2 [false false]}
+             (deep-transform-map {:key false :key2 [1 2]} identity (constantly false)))))))
 
 (deftest test-strinigify-map-keywords
   (testing "should return map with stringified keywords"
@@ -51,6 +52,11 @@
       (with-redefs [testee/deep-transform-map (fn [m kf vf] (swap! v #(update % :deep-transform-map inc)) m)]
         (testee/strinigify-map-keywords {:key :value})
         (is (= (get @v :deep-transform-map) 1))))))
+
+(deftest test-keywordize-dbmap
+  (testing "should transform strings to keywords"
+    (is (= {:key1 :value1 "key2" "value2"}
+           (testee/keywordize-dbmap {":key1" ":value1" "key2" "value2"})))))
 
 (deftest test-dbobj->map
   (testing "should transform dbobject to map"

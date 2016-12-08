@@ -60,10 +60,8 @@
 (deftest test-enrich-pipeline-state->json-format
   (testing "should enrich a pipeline-state"
     (let [now (clj-time.core/now)]
-      (with-redefs-fn {#'clj-time.core/now (fn [] now)
-                       #'clojure.core/hash (fn [_] 12345)}
+      (with-redefs-fn {#'clj-time.core/now (fn [] now)}
         #(is (= {":build-number" 42
-                 ":hash"         12345
                  ":created-at"   now
                  ":api-version"  p/persistence-api-version
                  ":steps"        {"1"   {":status" ":success" ":out" "hallo"}
@@ -149,35 +147,31 @@
 
     (testing "should update non-existing document"
       (let [now (clj-time.core/now)]
-        (with-redefs [clj-time.core/now (fn [] now)
-                      clojure.core/hash (fn [_] 12345)]
+        (with-redefs [clj-time.core/now (fn [] now)]
           (p/write-to-mongo-db "someMongoUri" db collection 42 some-state 7 "somePipelineDefinition")
           (let [result (mconv/from-db-object (mc/find-one db collection {":build-number" 42}) false)]
             (is (= {":api-version"  2
                     ":build-number" 42
-                    ":hash"         12345
                     ":steps"        {"1"   {":out"    "hallo"
                                             ":status" ":success"}
                                      "1-1" {":out"    "hey"
                                             ":status" ":waiting"}
                                      "2"   {":out"    "hey"
                                             ":status" ":failure"}}}
-                   (select-keys result [":build-number" ":api-version" ":hash" ":steps"])))
+                   (select-keys result [":build-number" ":api-version" ":steps"])))
             (is (= (time->iso-formatted-string now)
                    (time->iso-formatted-string (get result ":created-at"))))))))
 
     (testing "should update existing document"
       (let [now (clj-time.core/now)]
-        (with-redefs [clj-time.core/now (fn [] now)
-                      clojure.core/hash (fn [_] 12345)]
+        (with-redefs [clj-time.core/now (fn [] now)]
           (mc/insert db collection {":build-number" 41 ":someKey" ":someValue"})
           (p/write-to-mongo-db "someMongoUri" db collection 41 some-state 7 "somePipelineDefinition")
           (let [result (mconv/from-db-object (mc/find-one db collection {":build-number" 41}) false)]
             (is (= {":someKey"      ":someValue"
                     ":api-version"  2
                     ":build-number" 41
-                    ":hash"         12345
                     ":steps"        {"1" {":status" ":running"}}}
-                   (select-keys result [":build-number" ":api-version" ":hash" ":steps" ":someKey"])))
+                   (select-keys result [":build-number" ":api-version" ":steps" ":someKey"])))
             (is (= (time->iso-formatted-string now)
                    (time->iso-formatted-string (get result ":created-at"))))))))))

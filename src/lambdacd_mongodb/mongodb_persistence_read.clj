@@ -5,6 +5,7 @@
             [clojure.data.json :as json]
             [monger.query :as mq]
             monger.joda-time
+            [lambdacd-mongodb.mongodb-conversion :as conversion]
             [lambdacd-mongodb.mongodb-persistence-write :as p-write])
   (:use [com.rpl.specter]))
 
@@ -110,7 +111,13 @@
        (set-status-of-step mark-running-steps-as)
        (into {})))
 
+(defn transform-structure-map [m]
+  (let [build-number (get m :build-number)
+        structure (get m :pipeline-structure)]
+    (if (and build-number structure) {build-number structure} {})))
+
 (defn read-pipeline-structures-from [mongodb-db mongodb-col max-builds]
   (->> (find-builds mongodb-db mongodb-col max-builds)
-       (map read-state)
+       conversion/keywordize-dbmap
+       (map transform-structure-map)
        (into {})))

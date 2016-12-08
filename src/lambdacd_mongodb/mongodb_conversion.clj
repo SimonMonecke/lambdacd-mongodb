@@ -2,7 +2,7 @@
   (:require [clojure.string :as str]
             [monger.conversion :as mcon]))
 
-(defn deep-transform-map [input key-fn value-fn]
+(defn- deep-transform-map [input key-fn value-fn]
   (cond
     (map? input) (clojure.walk/walk (fn [[key value]] [(key-fn key) (deep-transform-map value key-fn value-fn)]) identity input)
     (sequential? input) (clojure.walk/walk (fn [value] (deep-transform-map value key-fn value-fn)) identity input)
@@ -20,6 +20,9 @@
 
 (defn strinigify-map-keywords [m]
   (deep-transform-map m keyword->string keyword->string))
+
+(defn keywordize-dbmap [m]
+  (deep-transform-map m string->keyword string->keyword))
 
 (defn dbojb->map [dbobj]
   (as-> dbobj $
