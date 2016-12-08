@@ -60,7 +60,7 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
 ## TODO
 
-- [ ] Use conversion function introduced with version 2.0.0 for state serialization
+- [ ] Use conversion functions introduced with version 2.0.0 for state serialization
 - [ ] Add Fongo tests for readable build-number serialization
 
 ## License
