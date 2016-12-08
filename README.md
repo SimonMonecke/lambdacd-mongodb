@@ -8,7 +8,7 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
 * Only builds with the same defintion can be restored (-> [LambdaCD Issue #6](https://github.com/flosell/lambdacd/issues/6))
 * Only builds with at least two active steps are stored because you don't need builds waiting for a trigger 
-* Tested with LambdaCD version 0.9.3
+* Tested with LambdaCD version 0.11.0
 * String keys in the global map starting with the prefix ":" will be restored as keyword and not as string
 
 ## Example
@@ -58,14 +58,8 @@ If you use [LambdaCD](https://github.com/flosell/lambdacd) in an environment wit
 
    * In this example the URI formed is `mongodb://user:password@localhost:27017/lambdacd`
 
-## TODO
-
-- [x] Exception-Handling
-- [x] Tests
-- [x] More tests 
-
 ## License
 
-Copyright © 2015 Simon Monecke
+Copyright © 2015 - 2016 Simon Monecke
 
 Distributed under MIT License
