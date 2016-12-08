@@ -46,14 +46,14 @@
         state (json-format->pipeline-state (json/read-str state-as-string :key-fn post-process-keys :value-fn post-process-values))]
     {build-number state}))
 
-(defn- find-builds [mongodb-db mongodb-col max-builds pipeline-def]
-  (let [pipeline-def-hash (hash (clojure.string/replace pipeline-def #"\s" ""))]
-    (doall (map #(monger.conversion/from-db-object % false)
-                (mq/with-collection mongodb-db mongodb-col
-                                    (mq/find {":hash" pipeline-def-hash ":api-version" p-write/persistence-api-version})
-                                    (mq/sort (array-map ":build-number" -1))
-                                    (mq/limit max-builds)
-                                    (mq/keywordize-fields false))))))
+(defn- find-builds [mongodb-db mongodb-col max-builds]
+  (doall (map #(monger.conversion/from-db-object % false)
+              (mq/with-collection mongodb-db mongodb-col
+                                  (mq/find {":api-version" p-write/persistence-api-version})
+                                  (mq/sort (array-map ":build-number" (int -1)))
+                                  (mq/limit max-builds)
+                                  (mq/keywordize-fields false)
+                                  ))))
 
 (defn set-status-of-step-specter [old-status new-status build-list]
   (setval [ALL                                              ;Container
@@ -103,9 +103,14 @@
           build-list))
 
 (defn read-build-history-from [mongodb-db mongodb-col max-builds mark-running-steps-as pipeline-def]
-  (->> (find-builds mongodb-db mongodb-col max-builds pipeline-def)
+  (->> (find-builds mongodb-db mongodb-col max-builds)
        (map read-state)
        (remove-artifacts)
        (set-step-message)
        (set-status-of-step mark-running-steps-as)
+       (into {})))
+
+(defn read-pipeline-structures-from [mongodb-db mongodb-col max-builds]
+  (->> (find-builds mongodb-db mongodb-col max-builds)
+       (map read-state)
        (into {})))

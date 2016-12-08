@@ -2,7 +2,12 @@
   (:require [clojure.test :refer :all]
             [lambdacd-mongodb.mongodb-persistence-read :as p]
             [clj-time.core :as t]
-            [lambdacd.util :as util]))
+            [lambdacd.util :as util]
+            [monger.collection :as mc]
+            [lambdacd-mongodb.mongodb-persistence-write :refer [persistence-api-version]]
+            )
+  (:import (com.github.fakemongo Fongo))
+  )
 
 (deftest test-clean-states
   (testing "don't change success steps"
@@ -146,3 +151,24 @@
       (with-redefs-fn {#'p/find-builds (fn [& _] test-builds)}
         #(is (= test-builds-result
                 (p/read-build-history-from "someDB" "someCol" 42 :failure "somePipelineDef")))))))
+
+(def fongo (atom nil))
+
+(defn db-clean-up-fixture [test]
+  (reset! fongo (Fongo. "test-fongo"))
+  (test)
+  (reset! fongo nil))
+
+(use-fixtures :each db-clean-up-fixture)
+
+(deftest test-find-builds
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"
+        find-builds #'p/find-builds]
+
+    (testing "should only find builds with the same api version in descending build-number order"
+      (mc/insert db collection {":build-number" 1 ":hash" "wrongHash" ":api-version" persistence-api-version})
+      (mc/insert db collection {":build-number" 2 ":api-version" persistence-api-version})
+
+      (let [result (find-builds db collection 10)]
+        (is (= [{":build-number" 2} {":build-number" 1}] (map #(select-keys %1 [":build-number"]) result)))))))

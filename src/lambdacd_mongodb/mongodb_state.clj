@@ -111,7 +111,9 @@
                                                    (or (:max-builds mc) 20)
                                                    (or (:mark-running-steps-as mc) :killed)
                                                    (:pipeline-def mc)))
-          structure-atom (atom {})                          ; TODO -- read structure from mongo
+          structure-atom (atom (persistence-read/read-pipeline-structures-from db
+                                                                               (:col mc)
+                                                                               (or (:max-builds mc) 20)))
           ]
       (->MongoDBState state-atom
                       structure-atom

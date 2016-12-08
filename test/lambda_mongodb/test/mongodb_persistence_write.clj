@@ -5,8 +5,7 @@
             [monger.conversion :as mconv]
             [lambdacd-mongodb.mongodb-conversion :as conversion])
   (:use [monger.operators])
-  (:import [com.github.fakemongo.Fongo]
-           (com.github.fakemongo Fongo))
+  (:import (com.github.fakemongo Fongo))
   )
 
 (deftest test-build-has-only-a-trigger
