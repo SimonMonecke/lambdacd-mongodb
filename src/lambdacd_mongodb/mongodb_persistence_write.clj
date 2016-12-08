@@ -6,7 +6,8 @@
             [clj-time.core :as t]
             [monger.joda-time]
             [clojure.tools.logging :as log]
-            [clojure.walk :refer [walk]])
+            [clojure.walk :refer [walk]]
+            [lambdacd-mongodb.mongodb-conversion :as conversion])
   (:use [com.rpl.specter]
         [monger.operators]))
 
@@ -111,7 +112,7 @@
 
 (defn create-or-update-build [{db :db coll :collection} build-number build-data-map]
   (let []
-    (mc/update db coll {":build-number" build-number} {$set build-data-map} {:upsert true})
+    (mc/update db coll {":build-number" build-number} {$set (conversion/strinigify-map-keywords build-data-map)} {:upsert true})
     (try
       (catch MongoException e
         (log/error e (str "LambdaCD-MongoDB: Write to DB: Cannot update structure for build number " build-number))))))

@@ -1,7 +1,8 @@
 (ns lambda-mongodb.test.mongodb-persistence-write
   (:require [clojure.test :refer :all]
             [lambdacd-mongodb.mongodb-persistence-write :as p]
-            [monger.collection :as mc])
+            [monger.collection :as mc]
+            [lambdacd-mongodb.mongodb-conversion :as conversion])
   (:use [monger.operators])
   (:import [com.github.fakemongo.Fongo]
            (com.github.fakemongo Fongo))
@@ -111,26 +112,25 @@
   (reset! fongo nil))
 
 (use-fixtures :each db-clean-up-fixture)
-;
-;(deftest test-create-or-update-non-existing-document
-;  (let [db (.getDB @fongo "lambdacd")
-;        collection "test-pipe"
-;        mongo {:db db :collection collection}]
-;
-;    (testing "should create non-existing document"
-;      (p/create-or-update-build mongo 42 {:some-field "someValue" :some-other-field "someOtherValue"})
-;      (let [result (mc/find-one-as-map db collection {":build-number" 42} [] true)]
-;        (is (= (select-keys result [:build-number :some-field :some-other-field])
-;               {:build-number 42 :some-field "someValue" :some-other-field "someOtherValue"}))))))
-;
-;(deftest test-create-or-update-upsert-document
-;  (let [db (.getDB @fongo "lambdacd")
-;        collection "test-pipe"
-;        mongo {:db db :collection collection}]
-;
-;    (testing "should update existing document"
-;      (mc/insert db collection {:build-number 42 :some-field "someValue"})
-;      (p/create-or-update-build mongo 42 {:some-field "someUpdatedValue" :some-other-field "someOtherValue"})
-;      (is (= (select-keys (mc/find-one-as-map db collection {:build-number 42}) [:build-number :some-field :some-other-field])
-;             {:build-number 42 :some-field "someUpdatedValue" :some-other-field "someOtherValue"})))))
-;
+
+(deftest test-create-or-update-non-existing-document
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"
+        mongo {:db db :collection collection}]
+    (testing "should create non-existing document"
+      (p/create-or-update-build mongo 42 {:some-field "someValue" :some-other-field "someOtherValue" "someStringKey" :someKeywordValue})
+      (let [result (conversion/dbojb->map (mc/find-one db collection {":build-number" 42}))]
+        (is (= (select-keys result [:build-number :some-field :some-other-field "someStringKey"]))
+            {:build-number 42 :some-field "someValue" :some-other-field "someOtherValue" "someStringKey" :someKeywordValue})))))
+
+(deftest test-create-or-update-upsert-document
+  (let [db (.getDB @fongo "lambdacd")
+        collection "test-pipe"
+        mongo {:db db :collection collection}]
+    (testing "should update existing document"
+      (mc/insert db collection (conversion/strinigify-map-keywords {:build-number 42 :some-field "someValue"}))
+      (p/create-or-update-build mongo 42 {:some-field "someUpdatedValue" :some-other-field "someOtherValue" "someStringKey" :someKeywordValue})
+      (let [result (conversion/dbojb->map (mc/find-one db collection {":build-number" 42}))]
+        (is (= (select-keys result [:build-number :some-field :some-other-field "someStringKey"])
+               {:build-number 42 :some-field "someUpdatedValue" :some-other-field "someOtherValue" "someStringKey" :someKeywordValue}))))))
+

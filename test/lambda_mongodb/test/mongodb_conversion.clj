@@ -43,13 +43,13 @@
     (is (= {:key false :key2 [false false]}
            (testee/deep-transform-map {:key false :key2 [1 2]} identity (constantly false))))))
 
-(deftest test-map->dbobj
-  (testing "should return dbobject"
-    (is (= "class com.mongodb.BasicDBObject" (str (type (testee/map->dbobj {:key :value}))))))
+(deftest test-strinigify-map-keywords
+  (testing "should return map with stringified keywords"
+    (is (= {":someKey" "someValue" "someOtherKey" ":someOtherValue"} (testee/strinigify-map-keywords {:someKey "someValue" "someOtherKey" :someOtherValue}))))
   (testing "should call deep-transform-map"
     (let [v (atom {:deep-transform-map 0})]
       (with-redefs [testee/deep-transform-map (fn [m kf vf] (swap! v #(update % :deep-transform-map inc)) m)]
-        (testee/map->dbobj {:key :value})
+        (testee/strinigify-map-keywords {:key :value})
         (is (= (get @v :deep-transform-map) 1))))))
 
 (deftest test-dbobj->map
@@ -66,10 +66,12 @@
   (testing "should transform map to dbobject and back again"
     (is (= {"key" "value"}
            (-> {"key" "value"}
-               testee/map->dbobj
+               testee/strinigify-map-keywords
+               monger.conversion/to-db-object
                testee/dbojb->map))))
   (testing "should transform map to dbobject and back again with keyword conversion"
     (is (= {:key :value :key2 "value2" :key3 {:key4 :value4} :key4 [1 2 3 :value5 "value6"]}
            (-> {:key :value :key2 "value2" :key3 {:key4 :value4} :key4 [1 2 3 :value5 "value6"]}
-               testee/map->dbobj
+               testee/strinigify-map-keywords
+               monger.conversion/to-db-object
                testee/dbojb->map)))))

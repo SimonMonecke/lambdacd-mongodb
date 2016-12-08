@@ -18,10 +18,8 @@
     (str k)
     k))
 
-(defn map->dbobj [m]
-  (as-> m $
-        (deep-transform-map $ keyword->string keyword->string)
-        (mcon/to-db-object $)))
+(defn strinigify-map-keywords [m]
+  (deep-transform-map m keyword->string keyword->string))
 
 (defn dbojb->map [dbobj]
   (as-> dbobj $
