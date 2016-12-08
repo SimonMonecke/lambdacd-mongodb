@@ -150,7 +150,7 @@
         (with-redefs [clj-time.core/now (fn [] now)]
           (p/write-to-mongo-db "someMongoUri" db collection 42 some-state 7 "somePipelineDefinition")
           (let [result (mconv/from-db-object (mc/find-one db collection {":build-number" 42}) false)]
-            (is (= {":api-version"  2
+            (is (= {":api-version"  3
                     ":build-number" 42
                     ":steps"        {"1"   {":out"    "hallo"
                                             ":status" ":success"}
@@ -169,7 +169,7 @@
           (p/write-to-mongo-db "someMongoUri" db collection 41 some-state 7 "somePipelineDefinition")
           (let [result (mconv/from-db-object (mc/find-one db collection {":build-number" 41}) false)]
             (is (= {":someKey"      ":someValue"
-                    ":api-version"  2
+                    ":api-version"  3
                     ":build-number" 41
                     ":steps"        {"1" {":status" ":running"}}}
                    (select-keys result [":build-number" ":api-version" ":steps" ":someKey"])))
