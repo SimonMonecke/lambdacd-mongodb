@@ -87,6 +87,11 @@
 ;        (assoc $ :api-version persistence-api-version)
 ;        ))
 
+(defn mask-credentials [mongodb-uri]
+  (if-let [match (re-find (re-pattern "mongodb://[^@]*@") mongodb-uri)]
+      (str/replace mongodb-uri match "")
+      (str/replace mongodb-uri "mongodb://" "")))
+
 (defn write-to-mongo-db [mongodb-uri mongodb-db mongodb-col build-number new-state ttl pipeline-def]
   (let [enriched-state (enrich-pipeline-state new-state build-number pipeline-def)]
     (try
@@ -94,7 +99,7 @@
       (mc/ensure-index mongodb-db mongodb-col (array-map ":created-at" 1) {:expireAfterSeconds (long (t/in-seconds (t/days ttl)))})
       (mc/ensure-index mongodb-db mongodb-col (array-map ":build-number" 1))
       (catch MongoException e
-        (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" mongodb-uri "\""))
+        (log/error (str "LambdaCD-MongoDB: Write to DB: Can't connect to MongoDB server \"" (mask-credentials mongodb-uri) "\""))
         (log/error e))
       (catch Exception e
         (log/error "LambdaCD-MongoDB: Write to DB: An unexpected error occurred")
