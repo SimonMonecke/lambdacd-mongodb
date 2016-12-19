@@ -1,12 +1,18 @@
 (ns lambda-mongodb.test.mongodb-persistence-write
   (:require [clojure.test :refer :all]
             [lambdacd-mongodb.mongodb-persistence-write :as p]
+            [clj-time.format :as ctf]
             [monger.collection :as mc]
             [monger.conversion :as mconv]
             [lambdacd-mongodb.mongodb-conversion :as conversion])
   (:use [monger.operators])
-  (:import (com.github.fakemongo Fongo))
-  )
+  (:import (com.github.fakemongo Fongo)))
+
+(deftest test-mask
+  (testing "mask credentials and protocol in uri"
+    (is (= (p/mask-credentials "mongodb://admin:123@mymongo.de:27017/lambdacd") "mymongo.de:27017/lambdacd")))
+  (testing "return uri without credentials unchanged"
+    (is (= (p/mask-credentials "mymongo.de:27017/lambdacd") "mymongo.de:27017/lambdacd"))))
 
 (deftest test-build-has-only-a-trigger
   (testing "build with only a trigger"
@@ -133,7 +139,7 @@
                {:build-number 42 :some-field "someUpdatedValue" :some-other-field "someOtherValue" "someStringKey" :someKeywordValue}))))))
 
 (defn time->iso-formatted-string [t]
-  (clj-time.format/unparse (clj-time.format/formatters :basic-date-time) t))
+  (ctf/unparse (ctf/formatters :basic-date-time) t))
 
 (deftest test-write-to-mongo-db
   (let [db (.getDB @fongo "lambdacd")
